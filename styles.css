@@ -599,6 +599,10 @@ select {
     box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.2);
 }
 
+.dark-mode h1 {
+    color: #00ff00; /* Temporary: for deployment verification */
+}
+
 .dark-mode #api-key-input, .dark-mode #api-base-url, .dark-mode #api-model-input, .dark-mode #api-provider-select, .dark-mode #api-model-select {
     border-color: #555;
     background-color: #3a3a3a;
