@@ -392,9 +392,22 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (apiSettings.provider === 'gemini') {
+                if (!completion.candidates || completion.candidates.length === 0) {
+                    const blockReason = completion.promptFeedback?.blockReason;
+                    if (blockReason) {
+                        throw new Error(`API 已屏蔽请求。原因: ${blockReason}`);
+                    }
+                    throw new Error("API 返回无效或空的响应。请检查图片内容或 API 设置。");
+                }
                 const rawText = completion.candidates[0].content.parts[0].text;
                 aiResponse = parseApiResponse(rawText);
             } else { // openai or custom
+                if (!completion.choices || completion.choices.length === 0) {
+                    if (completion.error) {
+                        throw new Error(`API 错误: ${completion.error.message}`);
+                    }
+                    throw new Error("API 返回无效或空的响应。请检查图片内容或 API 设置。");
+                }
                 const rawText = completion.choices[0].message.content;
                 aiResponse = parseApiResponse(rawText);
             }
