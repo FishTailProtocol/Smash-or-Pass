@@ -325,7 +325,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 { inline_data: { mime_type: 'image/webp', data: processedDataUrl.split(',')[1] } }
                             ]
                         }],
-                        generationConfig: { response_mime_type: "application/json" }
+                        generationConfig: { response_mime_type: "application/json", maxOutputTokens: 20000 }
                     })
                 };
             } else { // For 'openai' and 'custom' providers
@@ -349,7 +349,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 ]
                             }
                         ],
-                        max_tokens: 1000,
+                        max_tokens: 20000,
                         response_format: { type: "json_object" }
                     })
                 };
