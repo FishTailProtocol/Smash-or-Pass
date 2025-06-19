@@ -185,7 +185,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const isCustomProvider = provider === 'custom';
         const modelToSelect = savedSettings.model;
 
-        apiBaseUrlInput.disabled = false; // Always editable
+        apiBaseUrlInput.disabled = false;
 
         if (isCustomProvider) {
             apiBaseUrlInput.value = savedSettings.baseUrl || '';
@@ -197,37 +197,41 @@ document.addEventListener('DOMContentLoaded', () => {
             const preset = presets[provider];
             apiBaseUrlInput.value = savedSettings.baseUrl || preset.baseUrl;
 
-            // 只有在列表为空时才填充，避免重复
-            if (apiModelSelect.innerHTML.trim() === '' || apiModelSelect.dataset.provider !== provider) {
-                apiModelSelect.innerHTML = ''; // 清空旧列表
-                if (preset && preset.models) {
-                    preset.models.forEach(m => {
-                        const option = document.createElement('option');
-                        option.value = m;
-                        option.textContent = m;
-                        apiModelSelect.appendChild(option);
-                    });
-                }
-                const customOption = document.createElement('option');
-                customOption.value = 'custom-model';
-                customOption.textContent = '--- 自定义模型 ---';
-                apiModelSelect.appendChild(customOption);
-                apiModelSelect.dataset.provider = provider; // 标记当前提供商
+            // 总是重新填充列表以确保正确性
+            apiModelSelect.innerHTML = '';
+            if (preset && preset.models) {
+                preset.models.forEach(m => {
+                    const option = document.createElement('option');
+                    option.value = m;
+                    option.textContent = m;
+                    apiModelSelect.appendChild(option);
+                });
             }
+            const customOption = document.createElement('option');
+            customOption.value = 'custom-model';
+            customOption.textContent = '--- 自定义模型 ---';
+            apiModelSelect.appendChild(customOption);
 
-            const isCustomModel = modelToSelect && preset && !preset.models.includes(modelToSelect);
-
-            if (isCustomModel) {
-                apiModelSelect.value = 'custom-model';
-                apiModelInput.value = modelToSelect;
-                apiModelSelect.classList.add('hidden');
-                apiModelInput.classList.remove('hidden');
-                apiModelInput.disabled = false;
-            } else {
-                apiModelSelect.value = modelToSelect || (preset && preset.models ? preset.models[0] : '');
+            const isPresetModel = modelToSelect && preset && preset.models.includes(modelToSelect);
+            
+            if (isPresetModel) {
+                apiModelSelect.value = modelToSelect;
                 apiModelSelect.classList.remove('hidden');
                 apiModelInput.classList.add('hidden');
                 apiModelInput.disabled = true;
+            } else { // 自定义模型或无保存模型
+                apiModelSelect.value = modelToSelect ? 'custom-model' : (preset.models ? preset.models[0] : 'custom-model');
+                if (modelToSelect && !isPresetModel) {
+                     apiModelInput.value = modelToSelect;
+                } else {
+                     apiModelInput.value = '';
+                }
+                // 初始加载时，如果不是自定义，则显示下拉框
+                if(apiModelSelect.value !== 'custom-model'){
+                    apiModelSelect.classList.remove('hidden');
+                    apiModelInput.classList.add('hidden');
+                    apiModelInput.disabled = true;
+                }
             }
         }
     }
@@ -604,6 +608,17 @@ document.addEventListener('DOMContentLoaded', () => {
             apiModelInput.disabled = false;
             apiModelInput.value = '';
             apiModelInput.focus();
+        }
+    });
+
+    apiModelInput.addEventListener('input', () => {
+        if (apiModelInput.value.trim() === '') {
+            const provider = apiProviderSelect.value;
+            const preset = presets[provider];
+            apiModelSelect.value = preset && preset.models ? preset.models[0] : 'custom-model';
+            apiModelSelect.classList.remove('hidden');
+            apiModelInput.classList.add('hidden');
+            apiModelInput.disabled = true;
         }
     });
     toggleKeyVisibilityBtn.addEventListener('click', () => {
