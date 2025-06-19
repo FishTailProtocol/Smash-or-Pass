@@ -1,7 +1,6 @@
 # Smash or Pass AI
 
 <a href="https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fyukikazechan%2FSmash-or-Pass"><img src="https://vercel.com/button" alt="Deploy to Vercel"></a>
-<a href="https://deploy.workers.cloudflare.com/?url=https%3A%2F%2Fgithub.com%2Fyukikazechan%2FSmash-or-Pass"><img src="https://static.cloudflareinsights.com/pages/media/deploy-with-cloudflare-pages.svg" alt="Deploy to Cloudflare Pages"></a>
 
 An AI-powered image rating system that determines whether an image is "smash" or "pass" based on a set of lewd and humorous criteria.
 
