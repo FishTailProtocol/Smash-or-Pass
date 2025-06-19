@@ -184,41 +184,48 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateFormUI(provider, savedSettings = {}) {
         const isCustomProvider = provider === 'custom';
         const modelToSelect = savedSettings.model;
-        const isCustomModel = isCustomProvider || (modelToSelect && presets[provider] && !presets[provider].models.includes(modelToSelect));
 
-        apiBaseUrlInput.disabled = false; // Always editable
-
-        apiModelSelect.classList.toggle('hidden', isCustomProvider || isCustomModel);
-        apiModelInput.classList.toggle('hidden', !isCustomProvider && !isCustomModel);
-        apiModelInput.disabled = apiModelInput.classList.contains('hidden');
+        // 总是先清空模型列表
+        apiModelSelect.innerHTML = '';
 
         if (isCustomProvider) {
             apiBaseUrlInput.value = savedSettings.baseUrl || '';
             apiModelInput.value = savedSettings.model || '';
+            apiModelSelect.classList.add('hidden');
+            apiModelInput.classList.remove('hidden');
+            apiModelInput.disabled = false;
         } else {
             const preset = presets[provider];
             apiBaseUrlInput.value = savedSettings.baseUrl || preset.baseUrl;
-            
-            if (apiModelSelect.innerHTML.trim() === '') {
-                if (presets[provider] && presets[provider].models) {
-                    presets[provider].models.forEach(m => {
-                        const option = document.createElement('option');
-                        option.value = m;
-                        option.textContent = m;
-                        apiModelSelect.appendChild(option);
-                    });
-                }
+
+            // 填充正确的模型列表
+            if (preset && preset.models) {
+                preset.models.forEach(m => {
+                    const option = document.createElement('option');
+                    option.value = m;
+                    option.textContent = m;
+                    apiModelSelect.appendChild(option);
+                });
             }
+
             const customOption = document.createElement('option');
             customOption.value = 'custom-model';
             customOption.textContent = '--- 自定义模型 ---';
             apiModelSelect.appendChild(customOption);
 
+            const isCustomModel = modelToSelect && !preset.models.includes(modelToSelect);
+
             if (isCustomModel) {
                 apiModelSelect.value = 'custom-model';
                 apiModelInput.value = modelToSelect;
-            } else if (presets[provider] && presets[provider].models) {
-                apiModelSelect.value = modelToSelect || presets[provider].models[0];
+                apiModelSelect.classList.add('hidden');
+                apiModelInput.classList.remove('hidden');
+                apiModelInput.disabled = false;
+            } else {
+                apiModelSelect.value = modelToSelect || (preset.models ? preset.models[0] : '');
+                apiModelSelect.classList.remove('hidden');
+                apiModelInput.classList.add('hidden');
+                apiModelInput.disabled = true;
             }
         }
     }
