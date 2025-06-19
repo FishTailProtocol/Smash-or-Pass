@@ -386,14 +386,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!rawText) {
                     throw new Error("API 响应内容为空。");
                 }
+
+                // 尝试从 markdown 代码块中提取 JSON
                 const match = rawText.match(/```json\n([\s\S]*?)\n```/);
-                if (match && match[1]) {
-                    return JSON.parse(match[1]);
-                }
-                // 如果没有找到 markdown 代码块，尝试直接解析整个文本
+                let jsonString = match && match[1] ? match[1] : rawText;
+
                 try {
-                    return JSON.parse(rawText);
+                    return JSON.parse(jsonString);
                 } catch (e) {
+                    // 如果直接解析失败，并且文本以 '{' 开头，尝试修复不完整的 JSON
+                    if (jsonString.startsWith('{') && !jsonString.endsWith('}')) {
+                        try {
+                            const repairedJsonString = jsonString + '}';
+                            return JSON.parse(repairedJsonString);
+                        } catch (repairError) {
+                            // 修复后仍然失败，抛出原始错误
+                            throw new Error(`无法解析 API 响应，内容不是有效的 JSON (尝试修复后仍失败): ${rawText}`);
+                        }
+                    }
+                    // 如果不是可修复的截断 JSON，抛出原始错误
                     throw new Error(`无法解析 API 响应，内容不是有效的 JSON: ${rawText}`);
                 }
             }
