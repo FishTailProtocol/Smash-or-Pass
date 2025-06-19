@@ -153,18 +153,35 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function convertImageToJPEG(file) {
+        const MAX_DIMENSION = 1200;
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = (event) => {
                 const img = new Image();
                 img.onload = () => {
+                    let { width, height } = img;
+
+                    // Resize logic
+                    if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
+                        if (width > height) {
+                            height = Math.round(height * (MAX_DIMENSION / width));
+                            width = MAX_DIMENSION;
+                        } else {
+                            width = Math.round(width * (MAX_DIMENSION / height));
+                            height = MAX_DIMENSION;
+                        }
+                    }
+
                     const canvas = document.createElement('canvas');
-                    canvas.width = img.width;
-                    canvas.height = img.height;
+                    canvas.width = width;
+                    canvas.height = height;
                     const ctx = canvas.getContext('2d');
+                    
                     ctx.fillStyle = '#FFFFFF';
-                    ctx.fillRect(0, 0, canvas.width, canvas.height);
-                    ctx.drawImage(img, 0, 0);
+                    ctx.fillRect(0, 0, width, height);
+                    
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
                     try {
                         const jpegDataUrl = canvas.toDataURL('image/jpeg', 0.9);
                         resolve(jpegDataUrl);
