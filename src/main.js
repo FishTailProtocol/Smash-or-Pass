@@ -185,8 +185,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const isCustomProvider = provider === 'custom';
         const modelToSelect = savedSettings.model;
 
-        // 总是先清空模型列表
-        apiModelSelect.innerHTML = '';
+        apiBaseUrlInput.disabled = false; // Always editable
 
         if (isCustomProvider) {
             apiBaseUrlInput.value = savedSettings.baseUrl || '';
@@ -198,22 +197,25 @@ document.addEventListener('DOMContentLoaded', () => {
             const preset = presets[provider];
             apiBaseUrlInput.value = savedSettings.baseUrl || preset.baseUrl;
 
-            // 填充正确的模型列表
-            if (preset && preset.models) {
-                preset.models.forEach(m => {
-                    const option = document.createElement('option');
-                    option.value = m;
-                    option.textContent = m;
-                    apiModelSelect.appendChild(option);
-                });
+            // 只有在列表为空时才填充，避免重复
+            if (apiModelSelect.innerHTML.trim() === '' || apiModelSelect.dataset.provider !== provider) {
+                apiModelSelect.innerHTML = ''; // 清空旧列表
+                if (preset && preset.models) {
+                    preset.models.forEach(m => {
+                        const option = document.createElement('option');
+                        option.value = m;
+                        option.textContent = m;
+                        apiModelSelect.appendChild(option);
+                    });
+                }
+                const customOption = document.createElement('option');
+                customOption.value = 'custom-model';
+                customOption.textContent = '--- 自定义模型 ---';
+                apiModelSelect.appendChild(customOption);
+                apiModelSelect.dataset.provider = provider; // 标记当前提供商
             }
 
-            const customOption = document.createElement('option');
-            customOption.value = 'custom-model';
-            customOption.textContent = '--- 自定义模型 ---';
-            apiModelSelect.appendChild(customOption);
-
-            const isCustomModel = modelToSelect && !preset.models.includes(modelToSelect);
+            const isCustomModel = modelToSelect && preset && !preset.models.includes(modelToSelect);
 
             if (isCustomModel) {
                 apiModelSelect.value = 'custom-model';
@@ -222,7 +224,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 apiModelInput.classList.remove('hidden');
                 apiModelInput.disabled = false;
             } else {
-                apiModelSelect.value = modelToSelect || (preset.models ? preset.models[0] : '');
+                apiModelSelect.value = modelToSelect || (preset && preset.models ? preset.models[0] : '');
                 apiModelSelect.classList.remove('hidden');
                 apiModelInput.classList.add('hidden');
                 apiModelInput.disabled = true;
