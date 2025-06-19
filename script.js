@@ -189,10 +189,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         reject(e);
                     }
                 };
-                img.onerror = reject;
+                img.onerror = (err) => reject(new Error(`Image loading failed: ${err}`));
                 img.src = event.target.result;
             };
-            reader.onerror = reject;
+            reader.onerror = (err) => reject(new Error(`File reading failed: ${err}`));
             reader.readAsDataURL(file);
         });
     }
