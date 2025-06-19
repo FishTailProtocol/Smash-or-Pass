@@ -310,6 +310,16 @@ h1 {
     border-color: #444;
 }
 
+.dark-mode .disclaimer {
+    background-color: #4a4a4a; /* A darker, more suitable background */
+    border-left-color: var(--neutral-color);
+    color: #f1f1f1; /* Lighter text for better contrast */
+}
+
+.dark-mode .disclaimer strong {
+    color: #ff8a80; /* A lighter red for dark backgrounds */
+}
+
 /* Theme toggle */
 .theme-toggle {
     position: absolute;
