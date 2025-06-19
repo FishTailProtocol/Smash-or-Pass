@@ -232,20 +232,7 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const response = await fetch(url, options);
                 if (!response.ok) {
-                    // 只对网络错误或服务器端错误进行重试
-                    if (response.status >= 500) {
-                        throw new Error(`Server error: ${response.status}`);
-                    }
-                    // 对于客户端错误（如4xx），直接抛出，不重试
-                    const contentType = response.headers.get("content-type");
-                    let errorDetails = '';
-                    if (contentType && contentType.indexOf("application/json") !== -1) {
-                        const errorData = await response.json();
-                        errorDetails = errorData.error?.message || JSON.stringify(errorData);
-                    } else {
-                        errorDetails = await response.text();
-                    }
-                    throw new Error(`API Error: ${response.status} ${response.statusText} - ${errorDetails}`);
+                    throw new Error(`Request failed with status: ${response.status}`);
                 }
                 return response;
             } catch (error) {
