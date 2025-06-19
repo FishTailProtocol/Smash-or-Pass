@@ -391,10 +391,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            let rawText;
             if (apiSettings.provider === 'gemini') {
-                // Safely access nested properties using optional chaining
-                rawText = completion.candidates?.[0]?.content?.parts?.[0]?.text;
+                const rawText = completion.candidates?.[0]?.content?.parts?.[0]?.text;
                 if (!rawText) {
                     const blockReason = completion.promptFeedback?.blockReason;
                     const finishReason = completion.candidates?.[0]?.finishReason;
@@ -406,9 +404,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     throw new Error(errorMessage);
                 }
+                aiResponse = parseApiResponse(rawText);
             } else { // openai or custom
-                // Safely access nested properties using optional chaining
-                rawText = completion.choices?.[0]?.message?.content;
+                const rawText = completion.choices?.[0]?.message?.content;
                 if (!rawText) {
                      if (completion.error) {
                         throw new Error(`API 错误: ${completion.error.message}`);
@@ -420,8 +418,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     throw new Error(errorMessage);
                 }
+                aiResponse = parseApiResponse(rawText);
             }
-            aiResponse = parseApiResponse(rawText);
             
             console.log(aiResponse);
 
