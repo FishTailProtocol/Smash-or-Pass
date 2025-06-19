@@ -227,6 +227,35 @@ document.addEventListener('DOMContentLoaded', () => {
         originalReader.readAsDataURL(file);
     }
 
+    async function fetchWithRetry(url, options, retries = 3, delay = 1000) {
+        for (let i = 0; i < retries; i++) {
+            try {
+                const response = await fetch(url, options);
+                if (!response.ok) {
+                    // 只对网络错误或服务器端错误进行重试
+                    if (response.status >= 500) {
+                        throw new Error(`Server error: ${response.status}`);
+                    }
+                    // 对于客户端错误（如4xx），直接抛出，不重试
+                    const contentType = response.headers.get("content-type");
+                    let errorDetails = '';
+                    if (contentType && contentType.indexOf("application/json") !== -1) {
+                        const errorData = await response.json();
+                        errorDetails = errorData.error?.message || JSON.stringify(errorData);
+                    } else {
+                        errorDetails = await response.text();
+                    }
+                    throw new Error(`API Error: ${response.status} ${response.statusText} - ${errorDetails}`);
+                }
+                return response;
+            } catch (error) {
+                if (i === retries - 1) throw error; // 最后一次尝试失败，则抛出错误
+                console.log(`Attempt ${i + 1} failed. Retrying in ${delay}ms...`);
+                await new Promise(res => setTimeout(res, delay));
+            }
+        }
+    }
+
     async function analyzeImage(processedDataUrl, originalDataUrl) {
         if (!apiSettings.key || !apiSettings.baseUrl || !apiSettings.model) {
             alert('请确保 API 密钥、Base URL 和模型名称都已填写！');
@@ -299,7 +328,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     仅以JSON对象回应：
     {
-      "verdict": "上" 或 "不上", 
+      "verdict": "上" 或 "不上",
       "rating": 1到10的数字,
       "explanation": "你的极其详细的色情故事或解释。（中文）’"
     }
@@ -355,19 +384,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
             }
 
-            const response = await fetch(requestUrl, requestOptions);
-
-            if (!response.ok) {
-                const contentType = response.headers.get("content-type");
-                let errorDetails = '';
-                if (contentType && contentType.indexOf("application/json") !== -1) {
-                    const errorData = await response.json();
-                    errorDetails = errorData.error?.message || JSON.stringify(errorData);
-                } else {
-                    errorDetails = await response.text();
-                }
-                throw new Error(`API Error: ${response.status} ${response.statusText} - ${errorDetails}`);
-            }
+            const response = await fetchWithRetry(requestUrl, requestOptions);
 
             const completion = await response.json();
             let aiResponse;
