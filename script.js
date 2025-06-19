@@ -152,7 +152,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 3000);
     }
 
-    async function convertImageToJPEG(file) {
+    async function resizeAndConvertToWebP(file) {
         const MAX_DIMENSION = 800;
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
@@ -177,16 +177,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     canvas.height = height;
                     const ctx = canvas.getContext('2d');
                     
-                    ctx.fillStyle = '#FFFFFF';
-                    ctx.fillRect(0, 0, width, height);
-                    
                     ctx.drawImage(img, 0, 0, width, height);
                     
                     try {
                         const webpDataUrl = canvas.toDataURL('image/webp', 0.8);
                         resolve(webpDataUrl);
                     } catch (e) {
-                        reject(e);
+                        reject(new Error(`Failed to convert to WebP: ${e.message}`));
                     }
                 };
                 img.onerror = (err) => reject(new Error(`Image loading failed: ${err}`));
@@ -214,7 +211,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const existingSaveBtn = document.querySelector('.save-btn');
             if (existingSaveBtn) existingSaveBtn.remove();
 
-            convertImageToJPEG(file)
+            resizeAndConvertToWebP(file)
                 .then(processedDataUrl => analyzeImage(processedDataUrl, originalDataUrl))
                 .catch(err => {
                     console.error("Image conversion error:", err);
@@ -230,7 +227,7 @@ document.addEventListener('DOMContentLoaded', () => {
         originalReader.readAsDataURL(file);
     }
 
-    async function analyzeImage(jpegDataUrl, originalDataUrl) {
+    async function analyzeImage(processedDataUrl, originalDataUrl) {
         if (!apiSettings.key || !apiSettings.baseUrl || !apiSettings.model) {
             alert('请确保 API 密钥、Base URL 和模型名称都已填写！');
             loading.classList.add('hidden');
@@ -325,7 +322,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         contents: [{
                             parts: [
                                 { text: `${systemPrompt}\n\n请分析这张图片并决定的：上还是不上？` },
-                                { inline_data: { mime_type: 'image/jpeg', data: jpegDataUrl.split(',')[1] } }
+                                { inline_data: { mime_type: 'image/webp', data: processedDataUrl.split(',')[1] } }
                             ]
                         }],
                         generationConfig: { response_mime_type: "application/json" }
@@ -348,7 +345,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 role: "user",
                                 content: [
                                     { type: "text", text: "请分析这张图片并决定的：上还是不上？" },
-                                    { type: "image_url", image_url: { url: jpegDataUrl } }
+                                    { type: "image_url", image_url: { url: processedDataUrl } }
                                 ]
                             }
                         ],
