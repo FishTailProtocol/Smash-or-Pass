@@ -153,7 +153,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function convertImageToJPEG(file) {
-        const MAX_DIMENSION = 1200;
+        const MAX_DIMENSION = 800;
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = (event) => {
@@ -183,8 +183,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     ctx.drawImage(img, 0, 0, width, height);
                     
                     try {
-                        const jpegDataUrl = canvas.toDataURL('image/jpeg', 0.9);
-                        resolve(jpegDataUrl);
+                        const webpDataUrl = canvas.toDataURL('image/webp', 0.8);
+                        resolve(webpDataUrl);
                     } catch (e) {
                         reject(e);
                     }
@@ -215,7 +215,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (existingSaveBtn) existingSaveBtn.remove();
 
             convertImageToJPEG(file)
-                .then(jpegDataUrl => analyzeImage(jpegDataUrl, originalDataUrl))
+                .then(processedDataUrl => analyzeImage(processedDataUrl, originalDataUrl))
                 .catch(err => {
                     console.error("Image conversion error:", err);
                     alert("无法处理该图片，请尝试其他图片。");
