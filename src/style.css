@@ -300,6 +300,7 @@ h1 {
     --container-bg: #2d3436;
     --container-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
     --subtitle-color: #ccc;
+    --bg-color: #3a3a3a; /* Fix for dark mode inputs */
 }
 
 .dark-mode .ai-type-selector {
@@ -599,12 +600,11 @@ select {
 }
 
 .dark-mode h1 {
-    color: #00ff00; /* Temporary: for deployment verification */
+    color: var(--text-color); /* Revert temporary color */
 }
 
 .dark-mode #api-key-input, .dark-mode #api-base-url, .dark-mode #api-model-input, .dark-mode #api-provider-select, .dark-mode #api-model-select {
     border-color: #555;
-    background-color: #3a3a3a;
     color: #f1f1f1;
 }
 
