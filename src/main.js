@@ -199,13 +199,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const preset = presets[provider];
             apiBaseUrlInput.value = savedSettings.baseUrl || preset.baseUrl;
             
-            apiModelSelect.innerHTML = '';
-            preset.models.forEach(m => {
-                const option = document.createElement('option');
-                option.value = m;
-                option.textContent = m;
-                apiModelSelect.appendChild(option);
-            });
+            if (apiModelSelect.innerHTML.trim() === '') {
+                if (presets[provider] && presets[provider].models) {
+                    presets[provider].models.forEach(m => {
+                        const option = document.createElement('option');
+                        option.value = m;
+                        option.textContent = m;
+                        apiModelSelect.appendChild(option);
+                    });
+                }
+            }
             const customOption = document.createElement('option');
             customOption.value = 'custom-model';
             customOption.textContent = '--- 自定义模型 ---';
@@ -214,8 +217,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (isCustomModel) {
                 apiModelSelect.value = 'custom-model';
                 apiModelInput.value = modelToSelect;
-            } else {
-                apiModelSelect.value = modelToSelect || preset.models[0];
+            } else if (presets[provider] && presets[provider].models) {
+                apiModelSelect.value = modelToSelect || presets[provider].models[0];
             }
         }
     }
