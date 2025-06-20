@@ -134,129 +134,116 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Configuration & State ---
     const presets = {
-        openai: {
-            baseUrl: 'https://api.openai.com/v1',
-            models: []
-        },
-        gemini: {
-            baseUrl: 'https://generativelanguage.googleapis.com',
-            models: []
-        }
+        openai: { baseUrl: 'https://api.openai.com/v1', models: [] },
+        gemini: { baseUrl: 'https://generativelanguage.googleapis.com', models: [] },
+        anthropic: { baseUrl: 'https://api.anthropic.com/v1', models: ["claude-3-opus-20240229", "claude-3-sonnet-20240229", "claude-3-haiku-20240307"] }, // Anthropic doesn't have a models endpoint, pre-fill common ones
+        openrouter: { baseUrl: 'https://openrouter.ai/api/v1', models: [] },
+        siliconflow: { baseUrl: 'https://api.siliconflow.cn/v1', models: [] },
+        xai: { baseUrl: 'https://api.x.ai/v1', models: [] },
+        custom: { baseUrl: '', models: [] }
     };
 
-    let apiSettings = {
-        provider: 'custom',
-        key: '',
-        baseUrl: '',
-        model: ''
-    };
+    let allApiSettings = {};
+    let currentProvider = 'custom';
 
     let savedResults = [];
 
     // --- Functions ---
 
-    function updateFormUI(provider, savedSettings = {}) {
+    function updateFormUI(provider) {
+        const settings = allApiSettings[provider] || {};
+        const preset = presets[provider];
+        const modelToSelect = settings.model || '';
+
+        // Update form fields
+        apiKeyInput.value = settings.key || '';
+        apiBaseUrlInput.value = settings.baseUrl || (preset ? preset.baseUrl : '');
+        
         const isCustomProvider = provider === 'custom';
-        const modelToSelect = savedSettings.model;
+        apiBaseUrlInput.disabled = !isCustomProvider;
+        fetchModelsBtn.disabled = isCustomProvider;
 
-        apiBaseUrlInput.disabled = false;
+        // Update model list
+        apiModelSelect.innerHTML = '';
+        const currentModels = settings.models || (preset ? preset.models : []);
+        
+        if (currentModels.length > 0) {
+            currentModels.forEach(m => {
+                const option = document.createElement('option');
+                option.value = m;
+                option.textContent = m;
+                apiModelSelect.appendChild(option);
+            });
+        }
 
-        if (isCustomProvider) {
-            apiBaseUrlInput.value = savedSettings.baseUrl || '';
-            apiModelInput.value = savedSettings.model || '';
+        const customOption = document.createElement('option');
+        customOption.value = 'custom-model';
+        customOption.textContent = '--- 自定义模型 ---';
+        apiModelSelect.appendChild(customOption);
+
+        const isPresetModel = modelToSelect && currentModels.includes(modelToSelect);
+
+        if (isPresetModel) {
+            apiModelSelect.value = modelToSelect;
+            apiModelSelect.classList.remove('hidden');
+            apiModelInput.classList.add('hidden');
+            apiModelInput.disabled = true;
+        } else {
+            apiModelSelect.value = 'custom-model';
+            apiModelInput.value = modelToSelect;
             apiModelSelect.classList.add('hidden');
             apiModelInput.classList.remove('hidden');
             apiModelInput.disabled = false;
-        } else {
-            const preset = presets[provider];
-            apiBaseUrlInput.value = savedSettings.baseUrl || preset.baseUrl;
-
-            // 总是重新填充列表以确保正确性
-            apiModelSelect.innerHTML = '';
-            if (preset && preset.models) {
-                preset.models.forEach(m => {
-                    const option = document.createElement('option');
-                    option.value = m;
-                    option.textContent = m;
-                    apiModelSelect.appendChild(option);
-                });
-            }
-            const customOption = document.createElement('option');
-            customOption.value = 'custom-model';
-            customOption.textContent = '--- 自定义模型 ---';
-            apiModelSelect.appendChild(customOption);
-
-            const isPresetModel = modelToSelect && preset && preset.models.includes(modelToSelect);
-            
-            if (isPresetModel) {
-                apiModelSelect.value = modelToSelect;
-                apiModelSelect.classList.remove('hidden');
-                apiModelInput.classList.add('hidden');
-                apiModelInput.disabled = true;
-            } else { // 自定义模型或无保存模型
-                apiModelSelect.value = modelToSelect ? 'custom-model' : (preset.models ? preset.models[0] : 'custom-model');
-                if (modelToSelect && !isPresetModel) {
-                     apiModelInput.value = modelToSelect;
-                } else {
-                     apiModelInput.value = '';
-                }
-                // 初始加载时，如果不是自定义，则显示下拉框
-                if(apiModelSelect.value !== 'custom-model'){
-                    apiModelSelect.classList.remove('hidden');
-                    apiModelInput.classList.add('hidden');
-                    apiModelInput.disabled = true;
-                }
-            }
         }
+        
+        keyStatus.textContent = settings.key ? '已加载保存的设置。' : `尚未为 ${provider} 配置 API 密钥。`;
     }
 
     function loadApiSettings() {
-        const saved = JSON.parse(localStorage.getItem('api_settings'));
-        if (saved) {
-            apiSettings = { ...apiSettings, ...saved };
+        const savedSettings = JSON.parse(localStorage.getItem('allApiSettings'));
+        if (savedSettings) {
+            allApiSettings = savedSettings;
         }
-        
-        apiProviderSelect.value = apiSettings.provider;
-        apiKeyInput.value = apiSettings.key;
-        
-        updateFormUI(apiSettings.provider, apiSettings);
-
-        keyStatus.textContent = apiSettings.key ? '已加载保存的设置。' : '尚未配置 API 密钥。';
+        currentProvider = localStorage.getItem('currentProvider') || 'custom';
+        apiProviderSelect.value = currentProvider;
+        updateFormUI(currentProvider);
     }
 
     function saveApiSettings() {
-        apiSettings.provider = apiProviderSelect.value;
-        apiSettings.key = apiKeyInput.value.trim();
-        apiSettings.baseUrl = apiBaseUrlInput.value.trim();
-
+        const provider = apiProviderSelect.value;
         const isCustomModel = apiModelSelect.value === 'custom-model';
-        if (apiSettings.provider === 'custom' || isCustomModel) {
-            apiSettings.model = apiModelInput.value.trim();
-        } else {
-            apiSettings.model = apiModelSelect.value;
-        }
+        
+        const currentSettings = {
+            key: apiKeyInput.value.trim(),
+            baseUrl: apiBaseUrlInput.value.trim(),
+            model: (provider === 'custom' || isCustomModel) ? apiModelInput.value.trim() : apiModelSelect.value,
+            models: presets[provider]?.models || [] // Save the fetched models
+        };
 
-        localStorage.setItem('api_settings', JSON.stringify(apiSettings));
+        allApiSettings[provider] = currentSettings;
+        
+        localStorage.setItem('allApiSettings', JSON.stringify(allApiSettings));
+        localStorage.setItem('currentProvider', provider);
+
         keyStatus.textContent = '设置已保存！';
         setTimeout(() => {
-            if (apiKeyInput.value === apiSettings.key) {
-                keyStatus.textContent = '已加载保存的设置。';
-            }
+            keyStatus.textContent = currentSettings.key ? '已加载保存的设置。' : `尚未为 ${provider} 配置 API 密钥。`;
         }, 3000);
     }
 
     async function fetchModels() {
         const provider = apiProviderSelect.value;
-        if (provider === 'custom') {
-            keyStatus.textContent = '自定义模式，请手动输入模型。';
+        if (provider === 'custom' || provider === 'anthropic') {
+            keyStatus.textContent = `${provider === 'anthropic' ? 'Anthropic ' : '自定义模式'}，请手动输入模型。`;
             return;
         }
 
-        const key = apiKeyInput.value.trim();
-        const baseUrl = apiBaseUrlInput.value.trim();
+        const settings = allApiSettings[provider] || {};
+        const key = settings.key || apiKeyInput.value.trim();
+        const baseUrl = settings.baseUrl || apiBaseUrlInput.value.trim() || presets[provider].baseUrl;
 
         if (!key || !baseUrl) {
-            keyStatus.textContent = '请先输入 API 密钥和 Base URL。';
+            keyStatus.textContent = '请先保存 API 密钥和 Base URL。';
             return;
         }
 
@@ -265,14 +252,12 @@ document.addEventListener('DOMContentLoaded', () => {
         fetchModelsBtn.disabled = true;
 
         try {
-            if (provider === 'openai') {
-                url = `${baseUrl}/models`;
-                options = {
-                    headers: { 'Authorization': `Bearer ${key}` }
-                };
-            } else if (provider === 'gemini') {
+            if (provider === 'gemini') {
                 url = `${baseUrl}/v1beta/models?key=${key}`;
                 options = {};
+            } else { // OpenAI, OpenRouter, XAI, SiliconFlow use the same format
+                url = `${baseUrl}/models`;
+                options = { headers: { 'Authorization': `Bearer ${key}` } };
             }
 
             const response = await fetch(url, options);
@@ -284,14 +269,18 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
             let models = [];
 
-            if (provider === 'openai') {
-                models = data.data.map(model => model.id).sort();
-            } else if (provider === 'gemini') {
+            if (provider === 'gemini') {
                 models = data.models.map(model => model.name).sort();
+            } else {
+                models = data.data.map(model => model.id).sort();
             }
             
-            presets[provider].models = models;
-            updateFormUI(provider, apiSettings); // 使用当前设置重新加载UI
+            // Save models to the current provider's settings
+            if (!allApiSettings[provider]) allApiSettings[provider] = {};
+            allApiSettings[provider].models = models;
+            presets[provider].models = models; // Also update runtime preset
+
+            updateFormUI(provider); // Reload UI for the current provider
             keyStatus.textContent = `成功获取 ${models.length} 个模型！`;
 
         } catch (error) {
@@ -394,8 +383,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function analyzeImage(processedDataUrl, originalDataUrl) {
-        if (!apiSettings.key || !apiSettings.baseUrl || !apiSettings.model) {
-            alert('请确保 API 密钥、Base URL 和模型名称都已填写！');
+        const provider = apiProviderSelect.value;
+        const settings = allApiSettings[provider] || {};
+        
+        if (!settings.key || !settings.baseUrl || !settings.model) {
+            alert('请确保当前API提供商的 密钥、Base URL 和模型名称都已填写并保存！');
             loading.classList.add('hidden');
             result.classList.remove('hidden');
             verdict.textContent = '错误!';
@@ -411,10 +403,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             let requestUrl, requestOptions;
             
-            if (apiSettings.provider === 'gemini') {
-                const modelPath = apiSettings.model.replace(/^models\//, '');
-                // 直接使用完整的 Base URL，不再依赖 Vite 代理
-                requestUrl = `${apiSettings.baseUrl}/v1beta/models/${modelPath}:generateContent?key=${apiSettings.key}`;
+            if (provider === 'gemini') {
+                const modelPath = settings.model.replace(/^models\//, '');
+                requestUrl = `${settings.baseUrl}/v1beta/models/${modelPath}:generateContent?key=${settings.key}`;
                 requestOptions = {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -425,7 +416,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 { inline_data: { mime_type: 'image/webp', data: processedDataUrl.split(',')[1] } }
                             ]
                         }],
-                        generationConfig: { response_mime_type: "application/json", maxOutputTokens: 20000 },
+                        generationConfig: { response_mime_type: "application/json", maxOutputTokens: 8192 },
                         safetySettings: [
                             { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
                             { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
@@ -434,17 +425,42 @@ document.addEventListener('DOMContentLoaded', () => {
                         ]
                     })
                 };
-            } else { // For 'openai' and 'custom' providers
-                // 直接使用完整的 Base URL，不再依赖 Vite 代理
-                requestUrl = `${apiSettings.baseUrl}/chat/completions`;
+            } else if (provider === 'anthropic') {
+                requestUrl = `${settings.baseUrl}/messages`;
                 requestOptions = {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${apiSettings.key}`
+                        'x-api-key': settings.key,
+                        'anthropic-version': '2023-06-01'
                     },
                     body: JSON.stringify({
-                        model: apiSettings.model,
+                        model: settings.model,
+                        system: systemPrompt,
+                        messages: [{
+                            role: "user",
+                            content: [
+                                { type: "image", source: { type: "base64", media_type: "image/webp", data: processedDataUrl.split(',')[1] } },
+                                { type: "text", text: "请分析这张图片并决定的：上还是不上？" }
+                            ]
+                        }],
+                        max_tokens: 4096,
+                    })
+                };
+            } else { // For 'openai', 'openrouter', 'xai', 'siliconflow', and 'custom' providers
+                requestUrl = `${settings.baseUrl}/chat/completions`;
+                const headers = {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${settings.key}`
+                };
+                if (provider === 'openrouter') {
+                    headers['HTTP-Referer'] = location.origin;
+                }
+                requestOptions = {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({
+                        model: settings.model,
                         messages: [
                             { role: "system", content: systemPrompt },
                             {
@@ -455,7 +471,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 ]
                             }
                         ],
-                        max_tokens: 20000,
+                        max_tokens: 4096,
                         response_format: { type: "json_object" }
                     })
                 };
@@ -493,21 +509,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            if (apiSettings.provider === 'gemini') {
+            if (provider === 'gemini') {
                 const rawText = completion.candidates?.[0]?.content?.parts?.[0]?.text;
                 if (!rawText) {
                     const blockReason = completion.promptFeedback?.blockReason;
                     const finishReason = completion.candidates?.[0]?.finishReason;
                     let errorMessage = "API 返回无效或空的响应。";
-                    if (blockReason) {
-                        errorMessage += ` 原因: ${blockReason}.`;
-                    } else if (finishReason) {
-                        errorMessage += ` 结束原因: ${finishReason}.`;
-                    }
+                    if (blockReason) errorMessage += ` 原因: ${blockReason}.`;
+                    else if (finishReason) errorMessage += ` 结束原因: ${finishReason}.`;
                     throw new Error(errorMessage);
                 }
                 aiResponse = parseApiResponse(rawText);
-            } else { // openai or custom
+            } else if (provider === 'anthropic') {
+                const rawText = completion.content?.[0]?.text;
+                 if (!rawText) {
+                    const stopReason = completion.stop_reason;
+                    let errorMessage = "API 返回无效或空的响应。";
+                    if (stopReason) errorMessage += ` 结束原因: ${stopReason}.`;
+                    if (completion.error) errorMessage += ` 错误: ${completion.error.message}`;
+                    throw new Error(errorMessage);
+                }
+                aiResponse = parseApiResponse(rawText);
+            } else { // openai, openrouter, xai, siliconflow, custom
                 const rawText = completion.choices?.[0]?.message?.content;
                 if (!rawText) {
                      if (completion.error) {
@@ -515,9 +538,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     const finishReason = completion.choices?.[0]?.finish_reason;
                     let errorMessage = "API 返回无效或空的响应。";
-                    if (finishReason) {
-                        errorMessage += ` 结束原因: ${finishReason}.`;
-                    }
+                    if (finishReason) errorMessage += ` 结束原因: ${finishReason}.`;
                     throw new Error(errorMessage);
                 }
                 aiResponse = parseApiResponse(rawText);
@@ -634,7 +655,9 @@ document.addEventListener('DOMContentLoaded', () => {
     saveKeyBtn.addEventListener('click', saveApiSettings);
     fetchModelsBtn.addEventListener('click', fetchModels);
     apiProviderSelect.addEventListener('change', () => {
-        updateFormUI(apiProviderSelect.value);
+        currentProvider = apiProviderSelect.value;
+        localStorage.setItem('currentProvider', currentProvider);
+        updateFormUI(currentProvider);
     });
     apiModelSelect.addEventListener('change', () => {
         if (apiModelSelect.value === 'custom-model') {
