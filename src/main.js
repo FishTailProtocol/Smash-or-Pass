@@ -221,7 +221,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const currentSettings = {
             key: apiKeyInput.value.trim(),
             baseUrl: apiBaseUrlInput.value.trim(),
-            model: (provider === 'custom' || isCustomModel) ? apiModelInput.value.trim() : apiModelSelect.value,
+            model: isCustomModel ? apiModelInput.value.trim() : apiModelSelect.value,
             models: presets[provider]?.models || [] // Save the fetched models
         };
 
