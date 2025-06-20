@@ -883,34 +883,24 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // Global drag and drop
-        let dragCounter = 0;
-        document.body.addEventListener('dragenter', (e) => {
+        // Container-specific drag and drop
+        const container = document.querySelector('.container');
+        container.addEventListener('dragover', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            dragCounter++;
-            document.body.classList.add('drag-over-body');
+            container.classList.add('drag-over');
         });
 
-        document.body.addEventListener('dragleave', (e) => {
+        container.addEventListener('dragleave', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            dragCounter--;
-            if (dragCounter === 0) {
-                document.body.classList.remove('drag-over-body');
-            }
+            container.classList.remove('drag-over');
         });
 
-        document.body.addEventListener('dragover', (e) => {
+        container.addEventListener('drop', (e) => {
             e.preventDefault();
             e.stopPropagation();
-        });
-
-        document.body.addEventListener('drop', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            dragCounter = 0;
-            document.body.classList.remove('drag-over-body');
+            container.classList.remove('drag-over');
             if (e.dataTransfer.files.length) {
                 handleFileSelect(e.dataTransfer.files[0]);
             }
