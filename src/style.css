@@ -483,6 +483,13 @@ h1 { font-size: clamp(2rem, 6vw, 2.8rem); font-weight: 900; color: var(--text); 
         border-right: 1px solid var(--border);
         padding-right: 24px;
     }
+    @media (max-width: 600px) {
+        .prompt-list-container {
+            border-right: none;
+            padding-right: 0;
+            flex-shrink: 0;
+        }
+    }
     .prompt-list-actions {
         display: flex;
         gap: 8px;
@@ -510,6 +517,11 @@ h1 { font-size: clamp(2rem, 6vw, 2.8rem); font-weight: 900; color: var(--text); 
         align-items: center;
         transition: background-color 0.2s;
         line-height: 1.5; /* Ensure proper line height */
+    }
+    @media (max-width: 600px) {
+        #prompt-list {
+            max-height: 150px;
+        }
     }
     #prompt-list li:hover {
         background-color: color-mix(in srgb, var(--text) 5%, transparent);
