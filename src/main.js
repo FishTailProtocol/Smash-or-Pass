@@ -604,10 +604,11 @@ document.addEventListener('DOMContentLoaded', () => {
             verdictIcon.textContent = '❌';
             
             // Custom error message for non-VLM models
-            const errorMessage = error.message.toLowerCase();
-            if (errorMessage.includes('vlm') || errorMessage.includes('vision') || errorMessage.includes('provider returned error')) {
-                explanation.textContent = '该模型不支持视觉输入。';
+            // Check for specific error codes first, like rate limiting
+            if (error.response?.error?.code === 429) {
+                explanation.textContent = '请求过于频繁或模型暂时不可用 (速率限制)，请稍后再试或更换模型。';
             } else {
+                // For all other errors, display the message from the API
                 explanation.textContent = `出错了: ${error.message}.`;
             }
             
