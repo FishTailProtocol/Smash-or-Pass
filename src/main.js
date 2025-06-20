@@ -1001,7 +1001,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(promptToExport, null, 2));
             const downloadAnchorNode = document.createElement('a');
-            const fileName = `${currentName.replace(/[^a-z0-9_-\s]/gi, '_')}.json`;
+            const fileName = `${currentName.replace(/[^\w\s\u4e00-\u9fa5-]/g, '_')}.json`;
             downloadAnchorNode.setAttribute("href", dataStr);
             downloadAnchorNode.setAttribute("download", fileName);
             document.body.appendChild(downloadAnchorNode);
