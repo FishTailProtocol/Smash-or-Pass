@@ -257,30 +257,6 @@ const getRatingLabel = (rating) => {
     return '直接开导';
 };
 
-// Helper function to extract verdict terms from a prompt
-function getVerdictTerms(promptSet, aiType) {
-    // Use a fallback prompt set if the original one is deleted
-    const effectivePromptSet = allPrompts[promptSet] ? promptSet : '原版';
-    const promptText = allPrompts[effectivePromptSet]?.[aiType];
-    
-    if (!promptText) return { positive: 'SMASH', negative: 'PASS', moderate: 'MODERATE' };
-
-    // This regex handles two or three verdict options
-    const verdictRegex = /"verdict":\s*"([^"]+)"\s*or\s*"([^"]+)"(?: or "([^"]+)")?/;
-    const match = promptText.match(verdictRegex);
-
-    if (match) {
-        return {
-            positive: match[1],
-            negative: match[2],
-            moderate: match[3] // This will be undefined if not present
-        };
-    }
-    
-    // Fallback for safety
-    return { positive: 'SMASH', negative: 'PASS', moderate: 'MODERATE' };
-}
-
 const loadingMessages = [
     "AI正在审视每一个像素...",
     "计算可操性指数...",
@@ -363,6 +339,30 @@ document.addEventListener('DOMContentLoaded', () => {
     let allPrompts = {};
     let currentPromptSet = '原版';
     let editingPromptName = null;
+
+    // Helper function to extract verdict terms from a prompt
+    function getVerdictTerms(promptSet, aiType, prompts) {
+        // Use a fallback prompt set if the original one is deleted
+        const effectivePromptSet = prompts[promptSet] ? promptSet : '原版';
+        const promptText = prompts[effectivePromptSet]?.[aiType];
+        
+        if (!promptText) return { positive: 'SMASH', negative: 'PASS', moderate: 'MODERATE' };
+
+        // This regex handles two or three verdict options
+        const verdictRegex = /"verdict":\s*"([^"]+)"\s*or\s*"([^"]+)"(?: or "([^"]+)")?/;
+        const match = promptText.match(verdictRegex);
+
+        if (match) {
+            return {
+                positive: match[1],
+                negative: match[2],
+                moderate: match[3] // This will be undefined if not present
+            };
+        }
+        
+        // Fallback for safety
+        return { positive: 'SMASH', negative: 'PASS', moderate: 'MODERATE' };
+    }
 
     const presets = {
         openai: { baseUrl: 'https://api.openai.com/v1', models: [] },
@@ -699,7 +699,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const matchesSearch = (res.explanation || '').toLowerCase().includes(searchTerm);
 
             // Robust filter logic that works across different prompt sets
-            const terms = getVerdictTerms(res.promptSet || '原版', res.aiType || 'brief');
+            const terms = getVerdictTerms(res.promptSet || '原版', res.aiType || 'brief', allPrompts);
             const isPositive = res.verdict === terms.positive;
             const isNegative = res.verdict === terms.negative;
 
@@ -720,7 +720,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const card = document.createElement('div');
             card.className = 'saved-result-card';
 
-            const terms = getVerdictTerms(res.promptSet || '原版', res.aiType || 'brief');
+            const terms = getVerdictTerms(res.promptSet || '原版', res.aiType || 'brief', allPrompts);
             let icon = '🤔'; // Default/moderate icon
             if (res.verdict === terms.positive) {
                 icon = '🥵';
@@ -752,7 +752,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function showPopup(result) {
         elements.popupImg.src = result.image;
-        const terms = getVerdictTerms(result.promptSet || '原版', result.aiType || 'brief');
+        const terms = getVerdictTerms(result.promptSet || '原版', result.aiType || 'brief', allPrompts);
         let icon = '🤔'; // Default/moderate icon
         if (result.verdict === terms.positive) {
             icon = '🥵';
