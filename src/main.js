@@ -883,21 +883,38 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        ['dragover', 'drop'].forEach(eventName => {
-            elements.uploadArea.addEventListener(eventName, (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (eventName === 'dragover') {
-                    elements.uploadArea.classList.add('drag-over');
-                } else {
-                    elements.uploadArea.classList.remove('drag-over');
-                    if (e.dataTransfer.files.length) {
-                        handleFileSelect(e.dataTransfer.files[0]);
-                    }
-                }
-            });
+        // Global drag and drop
+        let dragCounter = 0;
+        document.body.addEventListener('dragenter', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            dragCounter++;
+            document.body.classList.add('drag-over-body');
         });
-        elements.uploadArea.addEventListener('dragleave', () => elements.uploadArea.classList.remove('drag-over'));
+
+        document.body.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            dragCounter--;
+            if (dragCounter === 0) {
+                document.body.classList.remove('drag-over-body');
+            }
+        });
+
+        document.body.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+        });
+
+        document.body.addEventListener('drop', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            dragCounter = 0;
+            document.body.classList.remove('drag-over-body');
+            if (e.dataTransfer.files.length) {
+                handleFileSelect(e.dataTransfer.files[0]);
+            }
+        });
 
         elements.clearSelectionBtn.addEventListener('click', () => showView('upload'));
         elements.startAnalysisBtn.addEventListener('click', analyzeImage);
