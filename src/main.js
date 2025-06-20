@@ -238,8 +238,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function fetchModels() {
         const provider = apiProviderSelect.value;
-        if (provider === 'custom' || provider === 'anthropic') {
-            keyStatus.textContent = `${provider === 'anthropic' ? 'Anthropic ' : '自定义模式'}，请手动输入模型。`;
+        if (provider === 'anthropic') {
+            keyStatus.textContent = `Anthropic 不支持模型列表获取，请手动输入模型。`;
             return;
         }
 
