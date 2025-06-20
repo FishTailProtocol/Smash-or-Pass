@@ -274,9 +274,17 @@ document.addEventListener('DOMContentLoaded', () => {
             let models = [];
 
             if (provider === 'gemini') {
-                models = data.models.map(model => model.name).sort();
-            } else {
-                models = data.data.map(model => model.id).sort();
+                // Filter for models that generally support vision. Exclude older non-vision models.
+                models = data.models
+                    .map(model => model.name)
+                    .filter(name => !name.includes('gemini-1.0-pro')) // gemini-1.0-pro is not a VLM
+                    .sort();
+            } else { // For OpenAI and compatible APIs
+                // Best-effort filtering for vision models based on common naming conventions
+                models = data.data
+                    .map(model => model.id)
+                    .filter(id => id.includes('vision') || id.includes('v') || id.includes('o') || id.includes('flash') || id.includes('pro'))
+                    .sort();
             }
             
             // IMPORTANT: Update in-memory settings BEFORE refreshing UI
@@ -376,7 +384,11 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const response = await fetch(url, options);
                 if (!response.ok) {
-                    throw new Error(`Request failed with status: ${response.status}`);
+                    const errorBody = await response.json().catch(() => ({ message: `Request failed with status: ${response.status}` }));
+                    const errorMessage = errorBody.error?.message || errorBody.message || `Request failed with status: ${response.status}`;
+                    const customError = new Error(errorMessage);
+                    customError.response = errorBody; // Attach full response for more detailed checking
+                    throw customError;
                 }
                 return response;
             } catch (error) {
@@ -598,7 +610,15 @@ document.addEventListener('DOMContentLoaded', () => {
             result.classList.remove('hidden');
             verdict.textContent = '错误!';
             verdictIcon.textContent = '❌';
-            explanation.textContent = `出错了: ${error.message}.`;
+            
+            // Custom error message for non-VLM models
+            const errorMessage = error.message.toLowerCase();
+            if (errorMessage.includes('vlm') || errorMessage.includes('vision')) {
+                explanation.textContent = '出错了: 该模型不支持视觉输入。请选择一个支持图片的模型 (例如包含 vision, gpt-4o, gemini-1.5 等关键字的模型)。';
+            } else {
+                explanation.textContent = `出错了: ${error.message}.`;
+            }
+            
             result.className = 'result';
         }
     }
