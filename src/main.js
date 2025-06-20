@@ -181,6 +181,11 @@ const defaultPrompts = {
                 - 7-8 = 颇具风韵，引人遐想
                 - 9-10 = 绝美之作，心驰神往
                 对于“心动”的评价，请确保文字在400字以上。`
+    },
+    "极简模板": {
+        brief: `[此处填写您的简短描述指令]\n\n请严格使用1-10分的标准进行评判。\n\n请仅以JSON格式回应:\n{\n  \"verdict\": \"[正面判词]\" or \"[负面判词]\",\n  \"rating\": 1-10,\n  \"explanation\": \"[您的分析理由]\"\n}\n\n评分标准: \n- 1-4 = [低分描述]\n- 5-6 = [中分描述]\n- 7-10 = [高分描述]`,
+        descriptive: `[此处填写您的详细描述指令]\n\n请严格使用1-10分的标准进行评判。\n\n请仅以JSON格式回应:\n{\n  \"verdict\": \"[正面判词]\" or \"[负面判词]\",\n  \"rating\": 1-10,\n  \"explanation\": \"[您的分析理由]\"\n}\n\n评分标准: \n- 1-4 = [低分描述]\n- 5-6 = [中分描述]\n- 7-10 = [高分描述]`,
+        novel: `[此处填写您的小说模式指令]\n\n请严格使用1-10分的标准进行评判。\n\n请仅以JSON格式回应:\n{\n  \"verdict\": \"[正面判词]\" or \"[负面判词]\",\n  \"rating\": 1-10,\n  \"explanation\": \"[您的分析理由]\"\n}\n\n评分标准: \n- 1-4 = [低分描述]\n- 5-6 = [中分描述]\n- 7-10 = [高分描述]`
     }
 };
 
@@ -971,7 +976,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } while (allPrompts[nextName]);
 
             editingPromptName = nextName;
-            allPrompts[editingPromptName] = { ...defaultPrompts['幻海秘境版'] }; // Use "幻海秘境版" as template
+            allPrompts[editingPromptName] = { ...defaultPrompts['极简模板'] }; // Use "极简模板" as template
             renderPromptList();
             showPromptEditor(editingPromptName);
         });
