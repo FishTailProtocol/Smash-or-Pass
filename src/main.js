@@ -333,16 +333,20 @@ document.addEventListener('DOMContentLoaded', () => {
     function displayResult(aiResponse) {
         hideLoading();
         elements.result.classList.remove('hidden');
-        
+
         const rating = parseFloat(aiResponse.rating);
-        const isSmash = rating >= 5;
-        const verdictText = aiResponse.verdict || (isSmash ? 'SMASH' : 'PASS');
+        const isPositive = rating >= 5; // Generic positive/negative threshold
 
-        elements.verdict.textContent = `${getRatingLabel(rating)} (${rating}/10)`;
-        elements.verdictIcon.textContent = isSmash ? '🥵' : '🥶';
-        elements.explanation.textContent = aiResponse.explanation;
-        elements.result.className = `result ${isSmash ? 'smash' : 'pass'}`;
+        // Use verdict from response, or a generic one if not present
+        const verdictText = aiResponse.verdict || (isPositive ? '高分' : '低分');
+        const reasoningText = aiResponse.reasoning || aiResponse.explanation || "没有提供理由。";
 
+        elements.verdict.textContent = `${verdictText} (${rating}/10)`;
+        elements.verdictIcon.textContent = isPositive ? '👍' : '👎';
+        elements.explanation.textContent = reasoningText;
+        elements.result.className = `result ${isPositive ? 'smash' : 'pass'}`; // Use generic classes for styling
+
+        // Clear old buttons and add new ones
         elements.resultActions.innerHTML = '';
         elements.resultActions.appendChild(elements.tryAgainBtn);
 
@@ -355,7 +359,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 image: originalDataUrl,
                 verdict: verdictText,
                 rating: aiResponse.rating,
-                explanation: aiResponse.explanation,
+                explanation: reasoningText, // Save reasoning/explanation
                 aiType: document.querySelector('input[name="ai-type"]:checked').value
             };
             savedResults.unshift(resultData);
