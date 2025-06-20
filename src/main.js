@@ -257,6 +257,30 @@ const getRatingLabel = (rating) => {
     return '直接开导';
 };
 
+// Helper function to extract verdict terms from a prompt
+function getVerdictTerms(promptSet, aiType) {
+    // Use a fallback prompt set if the original one is deleted
+    const effectivePromptSet = allPrompts[promptSet] ? promptSet : '原版';
+    const promptText = allPrompts[effectivePromptSet]?.[aiType];
+    
+    if (!promptText) return { positive: 'SMASH', negative: 'PASS', moderate: 'MODERATE' };
+
+    // This regex handles two or three verdict options
+    const verdictRegex = /"verdict":\s*"([^"]+)"\s*or\s*"([^"]+)"(?: or "([^"]+)")?/;
+    const match = promptText.match(verdictRegex);
+
+    if (match) {
+        return {
+            positive: match[1],
+            negative: match[2],
+            moderate: match[3] // This will be undefined if not present
+        };
+    }
+    
+    // Fallback for safety
+    return { positive: 'SMASH', negative: 'PASS', moderate: 'MODERATE' };
+}
+
 const loadingMessages = [
     "AI正在审视每一个像素...",
     "计算可操性指数...",
@@ -421,10 +445,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const resultData = {
                 timestamp: new Date().toISOString(),
                 image: originalDataUrl,
-                verdict: verdictText,
+                verdict: verdictText, // This is the raw verdict like "SMASH" or "PASS"
                 rating: aiResponse.rating,
-                explanation: reasoningText, // Save reasoning/explanation
-                aiType: document.querySelector('input[name="ai-type"]:checked').value
+                explanation: reasoningText,
+                aiType: document.querySelector('input[name="ai-type"]:checked').value,
+                promptSet: currentPromptSet // Save the prompt set used
             };
             savedResults.unshift(resultData);
             if (savedResults.length > 50) savedResults.pop();
@@ -684,10 +709,19 @@ document.addEventListener('DOMContentLoaded', () => {
         filteredResults.forEach(res => {
             const card = document.createElement('div');
             card.className = 'saved-result-card';
+
+            const terms = getVerdictTerms(res.promptSet || '原版', res.aiType || 'brief');
+            let icon = '🤔'; // Default/moderate icon
+            if (res.verdict === terms.positive) {
+                icon = '🥵';
+            } else if (res.verdict === terms.negative) {
+                icon = '🥶';
+            }
+
             card.innerHTML = `
                 <img src="${res.image}" alt="Saved result" loading="lazy">
                 <div class="saved-result-info">
-                    <p class="verdict">${getRatingLabel(res.rating)} (${res.rating}/10) ${res.verdict === 'SMASH' ? '🥵' : '🥶'}</p>
+                    <p class="verdict">${getRatingLabel(res.rating)} (${res.rating}/10) ${res.verdict} ${icon}</p>
                     <p class="date">${new Date(res.timestamp).toLocaleString()}</p>
                     <button class="delete-btn">🗑️ 删除</button>
                 </div>
@@ -708,7 +742,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function showPopup(result) {
         elements.popupImg.src = result.image;
-        elements.popupVerdict.textContent = `${getRatingLabel(result.rating)} (${result.rating}/10) ${result.verdict === 'SMASH' ? '🥵' : '🥶'}`;
+        const terms = getVerdictTerms(result.promptSet || '原版', result.aiType || 'brief');
+        let icon = '🤔'; // Default/moderate icon
+        if (result.verdict === terms.positive) {
+            icon = '🥵';
+        } else if (result.verdict === terms.negative) {
+            icon = '🥶';
+        }
+        elements.popupVerdict.textContent = `${getRatingLabel(result.rating)} (${result.rating}/10) ${result.verdict} ${icon}`;
         elements.popupExplanation.textContent = result.explanation;
         elements.popupOverlay.classList.remove('hidden');
     }
