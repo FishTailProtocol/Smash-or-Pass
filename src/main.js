@@ -501,7 +501,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 const rating = parseFloat(aiResponse.rating);
                 const isSmash = rating >= 5; // 5分及以上为smash
-                verdict.textContent = `评分: ${isSmash ? '上' : '不上'} (${rating}/10) - ${getRatingLabel(rating)}`;
+                const verdictText = isSmash ? '上' : '不上';
+
+                verdict.textContent = `评分: ${verdictText} (${rating}/10) - ${getRatingLabel(rating)}`;
                 verdictIcon.textContent = isSmash ? '👍' : '👎';
                 explanation.textContent = aiResponse.explanation;
                 
