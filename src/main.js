@@ -160,7 +160,7 @@ document.addEventListener('DOMContentLoaded', () => {
         apiBaseUrlInput.value = settings.baseUrl || (preset ? preset.baseUrl : '');
         
         const isCustomProvider = provider === 'custom';
-        apiBaseUrlInput.disabled = !isCustomProvider;
+        apiBaseUrlInput.disabled = false; // Always allow editing for custom proxies
         fetchModelsBtn.disabled = isCustomProvider || provider === 'anthropic';
 
         // Update model list
