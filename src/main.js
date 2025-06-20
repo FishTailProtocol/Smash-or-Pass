@@ -130,43 +130,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const saveKeyBtn = document.getElementById('save-key-btn');
     const toggleKeyVisibilityBtn = document.getElementById('toggle-key-visibility');
     const keyStatus = document.getElementById('key-status');
+    const fetchModelsBtn = document.getElementById('fetch-models-btn');
 
     // --- Configuration & State ---
     const presets = {
         openai: {
             baseUrl: 'https://api.openai.com/v1',
-            models: ['gpt-4o', 'gpt-4-turbo', 'gpt-3.5-turbo']
+            models: []
         },
         gemini: {
             baseUrl: 'https://generativelanguage.googleapis.com',
-            models: [
-                'models/gemini-2.5-flash-preview-05-20',
-                'models/gemini-1.5-pro-latest',
-                'models/gemini-1.5-flash-latest',
-                'models/gemini-1.0-pro',
-                'models/gemini-2.0-flash',
-                'models/gemini-2.0-flash-001',
-                'models/gemini-2.0-flash-exp',
-                'models/gemini-2.0-flash-lite',
-                'models/gemini-2.0-flash-lite-001',
-                'models/gemini-2.0-flash-lite-preview',
-                'models/gemini-2.0-flash-lite-preview-02-05',
-                'models/gemini-2.0-flash-live-001',
-                'models/gemini-2.0-flash-thinking-exp',
-                'models/gemini-2.0-flash-thinking-exp-01-21',
-                'models/gemini-2.0-flash-thinking-exp-1219',
-                'models/gemini-2.0-pro-exp',
-                'models/gemini-2.0-pro-exp-02-05',
-                'models/gemini-2.5-flash',
-                'models/gemini-2.5-flash-lite-preview-06-17',
-                'models/gemini-2.5-flash-preview-04-17',
-                'models/gemini-2.5-flash-preview-04-17-thinking',
-                'models/gemini-2.5-pro',
-                'models/gemini-2.5-pro-exp-03-25',
-                'models/gemini-2.5-pro-preview-03-25',
-                'models/gemini-2.5-pro-preview-05-06',
-                'models/gemini-2.5-pro-preview-06-05'
-            ]
+            models: []
         }
     };
 
@@ -269,6 +243,63 @@ document.addEventListener('DOMContentLoaded', () => {
                 keyStatus.textContent = '已加载保存的设置。';
             }
         }, 3000);
+    }
+
+    async function fetchModels() {
+        const provider = apiProviderSelect.value;
+        if (provider === 'custom') {
+            keyStatus.textContent = '自定义模式，请手动输入模型。';
+            return;
+        }
+
+        const key = apiKeyInput.value.trim();
+        const baseUrl = apiBaseUrlInput.value.trim();
+
+        if (!key || !baseUrl) {
+            keyStatus.textContent = '请先输入 API 密钥和 Base URL。';
+            return;
+        }
+
+        let url, options;
+        keyStatus.textContent = '正在获取模型列表...';
+        fetchModelsBtn.disabled = true;
+
+        try {
+            if (provider === 'openai') {
+                url = `${baseUrl}/models`;
+                options = {
+                    headers: { 'Authorization': `Bearer ${key}` }
+                };
+            } else if (provider === 'gemini') {
+                url = `${baseUrl}/v1beta/models?key=${key}`;
+                options = {};
+            }
+
+            const response = await fetch(url, options);
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ message: response.statusText }));
+                throw new Error(`获取模型失败: ${errorData.error?.message || response.statusText}`);
+            }
+
+            const data = await response.json();
+            let models = [];
+
+            if (provider === 'openai') {
+                models = data.data.map(model => model.id).sort();
+            } else if (provider === 'gemini') {
+                models = data.models.map(model => model.name).sort();
+            }
+            
+            presets[provider].models = models;
+            updateFormUI(provider, apiSettings); // 使用当前设置重新加载UI
+            keyStatus.textContent = `成功获取 ${models.length} 个模型！`;
+
+        } catch (error) {
+            console.error('Fetch models error:', error);
+            keyStatus.textContent = `错误: ${error.message}`;
+        } finally {
+            fetchModelsBtn.disabled = false;
+        }
     }
 
     async function resizeAndConvertToWebP(file) {
@@ -601,6 +632,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Event Listeners & Initializers ---
     
     saveKeyBtn.addEventListener('click', saveApiSettings);
+    fetchModelsBtn.addEventListener('click', fetchModels);
     apiProviderSelect.addEventListener('change', () => {
         updateFormUI(apiProviderSelect.value);
     });
