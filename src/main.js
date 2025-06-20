@@ -606,7 +606,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Custom error message for non-VLM models
             const errorMessage = error.message.toLowerCase();
             if (errorMessage.includes('vlm') || errorMessage.includes('vision')) {
-                explanation.textContent = '出错了: 该模型不支持视觉输入。请选择一个支持图片的模型 (例如包含 vision, gpt-4o, gemini-1.5 等关键字的模型)。';
+                explanation.textContent = '该模型不支持视觉输入。';
             } else {
                 explanation.textContent = `出错了: ${error.message}.`;
             }
