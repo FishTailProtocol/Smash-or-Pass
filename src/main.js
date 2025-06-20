@@ -695,8 +695,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const filterValue = elements.filterSavedSelect.value;
 
         const filteredResults = savedResults.filter(res => {
-            const matchesSearch = res.explanation.toLowerCase().includes(searchTerm);
-            const matchesFilter = filterValue === 'all' || res.verdict === filterValue;
+            // Defensive check for missing explanation to prevent crashes on old data
+            const matchesSearch = (res.explanation || '').toLowerCase().includes(searchTerm);
+
+            // Robust filter logic that works across different prompt sets
+            const terms = getVerdictTerms(res.promptSet || '原版', res.aiType || 'brief');
+            const isPositive = res.verdict === terms.positive;
+            const isNegative = res.verdict === terms.negative;
+
+            const matchesFilter = filterValue === 'all' ||
+                                  (filterValue === 'SMASH' && isPositive) ||
+                                  (filterValue === 'PASS' && isNegative);
+                                  
             return matchesSearch && matchesFilter;
         });
 
