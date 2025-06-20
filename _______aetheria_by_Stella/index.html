@@ -1,14 +1,16 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="zh">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>上不上AI评分系统 · 幻海秘境版</title>
+    <title>幻海秘境 · Aetheria</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <!-- 新增：引入得意黑字体，为网站带来更萌更圆的视觉效果 -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/atelier-anchor/smiley-sans@1.0.0/dist/css/smiley-sans.css" />
-    <link rel="stylesheet" href="/src/style.css">
+    <link rel="stylesheet" href="styles.css">
+    <script type="module" src="main.js" defer></script>
 </head>
 <body data-theme="mint">
 
@@ -21,6 +23,9 @@
         <svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet"><path d="M0,50 a1,1 0 0,0 100,0" /></svg>
     </div>
 
+    <!-- 新增：左上角关于按钮 -->
+    <button id="show-about-btn" class="show-about-btn" aria-label="关于本站">i</button>
+
     <div class="theme-switcher">
         <div class="theme-options" role="radiogroup" aria-labelledby="theme-label">
             <span id="theme-label" class="hidden">选择主题</span>
@@ -28,13 +33,12 @@
             <button class="theme-btn" data-theme="lemon" aria-label="柠檬主题" role="radio" aria-checked="false">🍋</button>
             <button class="theme-btn" data-theme="starry" aria-label="星空主题" role="radio" aria-checked="false">✨</button>
             <button class="theme-btn" data-theme="klein-blue" aria-label="克莱因蓝主题" role="radio" aria-checked="false">🟦</button>
-            <button class="theme-btn" data-theme="misty-peak" aria-label="高耸云烟主题" role="radio" aria-checked="false">🌫️</button>
         </div>
     </div>
 
     <main class="container">
         <header>
-            <h1>上不上AI评分系统</h1>
+            <h1>幻海秘境 · Aetheria</h1>
             <p class="subtitle">上传图片，让AI来评判它的可操性</p>
         </header>
 
@@ -43,51 +47,9 @@
             <p>⚠️ <strong>免责声明：</strong> 就图一乐，AI就看外形瞎评，甭当真！别拿自己照片试水，怕被喷就闪，审美这玩意儿因人而异！</p>
         </section>
 
-        <details class="api-settings-details">
-            <summary>API配置</summary>
-            <div class="api-key-container">
-                <p><strong>API 提供商</strong></p>
-                <div class="api-key-input-wrapper">
-                    <select id="api-provider-select">
-                        <option value="custom">自定义</option>
-                        <option value="openai">OpenAI</option>
-                        <option value="gemini">Google Gemini</option>
-                        <option value="anthropic">Anthropic</option>
-                        <option value="openrouter">OpenRouter</option>
-                        <option value="siliconflow">硅基流动</option>
-                        <option value="xai">xAI</option>
-                    </select>
-                </div>
-
-                <p><strong>API 密钥</strong></p>
-                <div class="api-key-input-wrapper">
-                    <input type="password" id="api-key-input" placeholder="在此输入您的 API 密钥">
-                    <button id="toggle-key-visibility" class="key-visibility-toggle">👁️</button>
-                </div>
-
-                <p><strong>API Base URL</strong></p>
-                <div class="api-key-input-wrapper">
-                    <input type="text" id="api-base-url" placeholder="选择提供商可自动填充">
-                </div>
-
-                <p><strong>模型名称</strong></p>
-                <div class="api-key-input-wrapper model-input-wrapper">
-                    <select id="api-model-select"></select>
-                    <input type="text" id="api-model-input" class="hidden" placeholder="请输入自定义模型名称">
-                    <button id="fetch-models-btn" class="btn btn-secondary">获取模型</button>
-                </div>
-
-                <button id="save-key-btn" class="btn">保存设置</button>
-                <p id="key-status" class="key-status"></p>
-            </div>
-        </details>
-
-        <section class="prompt-selector">
-            <div class="prompt-selection-ui">
-                <select id="prompt-select"></select>
-                <button id="manage-prompts-btn" class="btn btn-secondary">提示词管理</button>
-            </div>
-             <div class="ai-type-options">
+        <section class="ai-type-selector" role="radiogroup" aria-labelledby="ai-mode-label">
+            <p id="ai-mode-label">选择AI分析模式：</p>
+            <div class="ai-type-options">
                 <label class="ai-type-option">
                     <input type="radio" name="ai-type" value="brief" checked>
                     <span>简短模式</span>
@@ -174,37 +136,28 @@
         </div>
     </div>
 
-    <div id="prompt-manager-overlay" class="hidden" role="dialog" aria-modal="true" aria-labelledby="prompt-manager-title">
-        <div class="prompt-manager-panel">
-            <button id="close-prompt-manager-btn" class="close-btn" aria-label="关闭提示词管理器">×</button>
-            <h2 id="prompt-manager-title">提示词管理</h2>
-            <div class="prompt-manager-content">
-                <div class="prompt-list-container">
-                    <ul id="prompt-list"></ul>
-                    <div class="prompt-list-actions">
-                        <button id="import-prompts-btn" class="btn btn-secondary">导入</button>
-                        <button id="export-prompts-btn" class="btn btn-secondary">导出</button>
-                        <button id="add-prompt-btn" class="btn">新建</button>
-                    </div>
-                    <input type="file" id="import-prompts-input" class="hidden" accept=".json">
-                </div>
-                <div id="prompt-editor" class="hidden">
-                    <input type="text" id="prompt-name-input" placeholder="提示词组名称">
-                    <h3>简短模式</h3>
-                    <textarea id="prompt-brief-input"></textarea>
-                    <h3>详细模式</h3>
-                    <textarea id="prompt-descriptive-input"></textarea>
-                    <h3>小说模式</h3>
-                    <textarea id="prompt-novel-input"></textarea>
-                    <div class="prompt-editor-actions">
-                        <button id="save-prompt-btn" class="btn">保存</button>
-                        <button id="cancel-prompt-btn" class="btn btn-secondary">取消</button>
-                    </div>
-                </div>
+    <!-- 新增：About 弹窗 -->
+    <div id="about-overlay" class="hidden" role="dialog" aria-modal="true" aria-labelledby="about-title">
+        <div class="about-card">
+            <button class="close-about close-btn" aria-label="关闭关于本站弹窗">×</button>
+            <h2 id="about-title">幻海秘境 · Aetheria</h2>
+            <div class="about-content">
+                <p>在这里，卸下现实的枷锁，</p>
+                <p class="en">Let go of the worldly shackles,</p>
+                <p>让最本真的幻想，悄然绽放。</p>
+                <p class="en">and let your truest fantasies gently bloom.</p>
+                <p>轻触上传，唤醒沉睡在像素深处的灵魂，</p>
+                <p class="en">With a soft touch, awaken the soul sleeping deep within the pixels,</p>
+                <p>聆听它为你一人吟唱的，无所禁忌的欲望私语。</p>
+                <p class="en">and listen, for it whispers back to you—a forbidden verse of desire, meant for your ears alone.</p>
+            </div>
+            <div class="about-actions">
+                <button id="about-confirm-btn" class="btn">我明白了</button>
+                <button id="about-hide-today-btn" class="btn btn-secondary">今日不再显示</button>
+                <button id="about-hide-forever-btn" class="btn btn-tertiary">永久不再显示</button>
             </div>
         </div>
     </div>
     
-    <script type="module" src="/src/main.js"></script>
 </body>
 </html>
