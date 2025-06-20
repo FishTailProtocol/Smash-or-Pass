@@ -499,8 +499,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 loading.classList.add('hidden');
                 result.classList.remove('hidden');
                 
-                const isSmash = aiResponse.verdict === '上';
-                verdict.textContent = `评分: ${aiResponse.verdict} (${aiResponse.rating}/10) - ${getRatingLabel(aiResponse.rating)}`;
+                const rating = parseFloat(aiResponse.rating);
+                const isSmash = rating >= 5; // 5分及以上为smash
+                verdict.textContent = `评分: ${isSmash ? '上' : '不上'} (${rating}/10) - ${getRatingLabel(rating)}`;
                 verdictIcon.textContent = isSmash ? '👍' : '👎';
                 explanation.textContent = aiResponse.explanation;
                 
