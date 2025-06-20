@@ -274,17 +274,9 @@ document.addEventListener('DOMContentLoaded', () => {
             let models = [];
 
             if (provider === 'gemini') {
-                // Filter for models that generally support vision. Exclude older non-vision models.
-                models = data.models
-                    .map(model => model.name)
-                    .filter(name => !name.includes('gemini-1.0-pro')) // gemini-1.0-pro is not a VLM
-                    .sort();
-            } else { // For OpenAI and compatible APIs
-                // Best-effort filtering for vision models based on common naming conventions
-                models = data.data
-                    .map(model => model.id)
-                    .filter(id => id.includes('vision') || id.includes('v') || id.includes('o') || id.includes('flash') || id.includes('pro'))
-                    .sort();
+                models = data.models.map(model => model.name).sort();
+            } else {
+                models = data.data.map(model => model.id).sort();
             }
             
             // IMPORTANT: Update in-memory settings BEFORE refreshing UI
