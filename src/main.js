@@ -161,11 +161,13 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const isCustomProvider = provider === 'custom';
         apiBaseUrlInput.disabled = !isCustomProvider;
-        fetchModelsBtn.disabled = isCustomProvider;
+        fetchModelsBtn.disabled = isCustomProvider || provider === 'anthropic';
 
         // Update model list
         apiModelSelect.innerHTML = '';
-        const currentModels = settings.models || (preset ? preset.models : []);
+        const currentModels = (settings.models && settings.models.length > 0)
+                              ? settings.models
+                              : (preset ? preset.models : []);
         
         if (currentModels.length > 0) {
             currentModels.forEach(m => {
@@ -181,19 +183,22 @@ document.addEventListener('DOMContentLoaded', () => {
         customOption.textContent = '--- 自定义模型 ---';
         apiModelSelect.appendChild(customOption);
 
-        const isPresetModel = modelToSelect && currentModels.includes(modelToSelect);
+        const isCustomModelSelected = modelToSelect && !currentModels.includes(modelToSelect);
 
-        if (isPresetModel) {
-            apiModelSelect.value = modelToSelect;
-            apiModelSelect.classList.remove('hidden');
-            apiModelInput.classList.add('hidden');
-            apiModelInput.disabled = true;
-        } else {
+        // If we have models, show the dropdown. Otherwise, or if a custom model is saved, show the input.
+        if (currentModels.length === 0 || isCustomModelSelected) {
             apiModelSelect.value = 'custom-model';
-            apiModelInput.value = modelToSelect;
+            apiModelInput.value = modelToSelect; // Keep the saved custom model name
             apiModelSelect.classList.add('hidden');
             apiModelInput.classList.remove('hidden');
             apiModelInput.disabled = false;
+        } else {
+            apiModelSelect.classList.remove('hidden');
+            apiModelInput.classList.add('hidden');
+            apiModelInput.disabled = true;
+            apiModelInput.value = ''; // Clear custom input
+            // Select the saved model if it exists in the list, otherwise select the first one.
+            apiModelSelect.value = (modelToSelect && currentModels.includes(modelToSelect)) ? modelToSelect : currentModels[0];
         }
         
         keyStatus.textContent = settings.key ? '已加载保存的设置。' : `尚未为 ${provider} 配置 API 密钥。`;
@@ -238,12 +243,11 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const settings = allApiSettings[provider] || {};
-        const key = settings.key || apiKeyInput.value.trim();
-        const baseUrl = settings.baseUrl || apiBaseUrlInput.value.trim() || presets[provider].baseUrl;
+        const key = apiKeyInput.value.trim();
+        const baseUrl = apiBaseUrlInput.value.trim();
 
         if (!key || !baseUrl) {
-            keyStatus.textContent = '请先保存 API 密钥和 Base URL。';
+            keyStatus.textContent = '请先输入 API 密钥和 Base URL。';
             return;
         }
 
@@ -275,12 +279,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 models = data.data.map(model => model.id).sort();
             }
             
-            // Save models to the current provider's settings
+            // IMPORTANT: Update in-memory settings BEFORE refreshing UI
             if (!allApiSettings[provider]) allApiSettings[provider] = {};
+            allApiSettings[provider].key = key;
+            allApiSettings[provider].baseUrl = baseUrl;
             allApiSettings[provider].models = models;
-            presets[provider].models = models; // Also update runtime preset
-
-            updateFormUI(provider); // Reload UI for the current provider
+            
+            updateFormUI(provider); // Reload UI with the new data
             keyStatus.textContent = `成功获取 ${models.length} 个模型！`;
 
         } catch (error) {
