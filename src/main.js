@@ -605,7 +605,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Custom error message for non-VLM models
             const errorMessage = error.message.toLowerCase();
-            if (errorMessage.includes('vlm') || errorMessage.includes('vision')) {
+            if (errorMessage.includes('vlm') || errorMessage.includes('vision') || errorMessage.includes('provider returned error')) {
                 explanation.textContent = '该模型不支持视觉输入。';
             } else {
                 explanation.textContent = `出错了: ${error.message}.`;
