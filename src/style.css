@@ -589,3 +589,70 @@ h1 { font-size: clamp(2rem, 6vw, 2.8rem); font-weight: 900; color: var(--text); 
     }
 
 /* This is no longer needed as we are not using a global drag-over state */
+
+/* === Share Overlay Styles === */
+#share-overlay {
+    position: fixed; inset: 0; background-color: rgba(0, 0, 0, 0.4); backdrop-filter: blur(8px) saturate(100%); z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 16px; opacity: 0; visibility: hidden; transition: opacity 0.4s, visibility 0s 0.4s;
+}
+#share-overlay:not(.hidden) { opacity: 1; visibility: visible; transition: opacity 0.4s; }
+
+.share-panel {
+    width: 100%;
+    max-width: 650px; /* Adjust width for better viewing */
+    height: auto;
+    max-height: 90vh;
+    background: var(--bg-container);
+    border-radius: var(--border-radius);
+    box-shadow: 0 20px 60px -10px var(--shadow);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    transform: scale(0.95);
+    transition: transform 0.4s var(--timing-function);
+    gap: 24px;
+}
+#share-overlay:not(.hidden) .share-panel { transform: scale(1); }
+
+.share-panel h2 {
+    text-align: center;
+    margin-bottom: 0;
+}
+#share-image-container {
+    flex-grow: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: color-mix(in srgb, var(--text) 5%, transparent);
+    border-radius: var(--border-radius);
+    padding: 16px;
+    overflow: auto;
+}
+#share-image-container canvas {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    border-radius: var(--border-radius); /* Ensure canvas itself has rounded corners */
+    box-shadow: 0 8px 25px -10px var(--shadow);
+}
+.share-actions {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+}
+
+.popup-actions {
+    display: flex;
+    justify-content: center;
+    margin-top: 24px;
+}
+
+#popup-card-content {
+    display: flex;
+    flex-direction: column;
+}
+
+#popup-explanation {
+    flex-grow: 1;
+    overflow-y: auto;
+}

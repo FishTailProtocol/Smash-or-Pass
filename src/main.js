@@ -363,6 +363,8 @@ document.addEventListener('DOMContentLoaded', () => {
         popupVerdict: document.getElementById('popup-verdict'),
         popupExplanation: document.getElementById('popup-explanation'),
         closePopupBtn: document.querySelector('.close-popup'),
+        popupCardContent: document.getElementById('popup-card-content'),
+        shareFromPopupBtn: document.getElementById('share-from-popup-btn'),
         // API Settings Elements
         apiProviderSelect: document.getElementById('api-provider-select'),
         apiKeyInput: document.getElementById('api-key-input'),
@@ -392,6 +394,12 @@ document.addEventListener('DOMContentLoaded', () => {
         importPromptsInput: document.getElementById('import-prompts-input'),
         searchSavedInput: document.getElementById('search-saved'),
         filterSavedSelect: document.getElementById('filter-saved'),
+        // Share Overlay Elements
+        shareOverlay: document.getElementById('share-overlay'),
+        closeShareBtn: document.getElementById('close-share-btn'),
+        copyShareBtn: document.getElementById('copy-share-btn'),
+        downloadShareBtn: document.getElementById('download-share-btn'),
+        shareImageContainer: document.getElementById('share-image-container'),
     };
 
     // --- State Management ---
@@ -540,6 +548,12 @@ document.addEventListener('DOMContentLoaded', () => {
             saveBtn.textContent = '✓ 已保存';
         });
         elements.resultActions.prepend(saveBtn);
+
+        const shareBtn = document.createElement('button');
+        shareBtn.className = 'btn';
+        shareBtn.innerHTML = '🖼️ 生成分享图';
+        shareBtn.addEventListener('click', () => generateShareImage(elements.result, originalDataUrl));
+        elements.resultActions.insertBefore(shareBtn, elements.tryAgainBtn);
     }
 
     function displayError(errorMessage) {
@@ -846,6 +860,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         elements.popupVerdict.textContent = `${getRatingLabel(result.rating)} (${result.rating}/10) ${result.verdict} ${icon}`;
         elements.popupExplanation.textContent = result.explanation;
+
+        // The share button listener is attached here to capture the correct `result` object
+        elements.shareFromPopupBtn.onclick = () => {
+            generateShareImage(elements.popupCardContent, result.image);
+        };
+
         elements.popupOverlay.classList.remove('hidden');
     }
 
@@ -1122,6 +1142,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         elements.closeSavedBtn.addEventListener('click', () => elements.savedResultsOverlay.classList.add('hidden'));
         elements.closePopupBtn.addEventListener('click', () => elements.popupOverlay.classList.add('hidden'));
+        elements.closeShareBtn.addEventListener('click', () => elements.shareOverlay.classList.add('hidden'));
 
         elements.searchSavedInput.addEventListener('input', renderSavedResults);
         elements.filterSavedSelect.addEventListener('change', renderSavedResults);
@@ -1264,6 +1285,85 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Initializations ---
+
+    function generateShareImage(sourceElement, imageSrc) {
+        const copyBtn = elements.copyShareBtn;
+        const downloadBtn = elements.downloadShareBtn;
+
+        // Temporarily hide buttons within the source element for the screenshot
+        const actions = sourceElement.querySelector('.result-actions, .popup-actions');
+        if (actions) actions.style.visibility = 'hidden';
+
+        html2canvas(sourceElement, {
+            backgroundColor: null,
+            useCORS: true,
+            onclone: (doc) => {
+                const clonedElement = doc.getElementById(sourceElement.id);
+                if (!clonedElement) return;
+
+                // Get the original display style and apply it to the clone
+                const originalDisplay = window.getComputedStyle(sourceElement).display;
+                clonedElement.style.display = originalDisplay;
+                clonedElement.style.borderRadius = 'var(--border-radius)';
+
+                // Ensure the correct image is shown in the clone
+                const thumbnail = clonedElement.querySelector('#result-image-thumbnail, #popup-img');
+                if (thumbnail && imageSrc) thumbnail.src = imageSrc;
+                
+                // Hide actions in the clone permanently for the screenshot
+                const clonedActions = clonedElement.querySelector('.result-actions, .popup-actions');
+                if (clonedActions) clonedActions.style.display = 'none';
+            }
+        }).then(canvas => {
+            // Restore button visibility on the original element
+            if (actions) actions.style.visibility = 'visible';
+
+            elements.shareImageContainer.innerHTML = '';
+            canvas.style.width = '100%';
+            canvas.style.height = 'auto';
+            canvas.style.borderRadius = 'var(--border-radius)';
+            elements.shareImageContainer.appendChild(canvas);
+            elements.shareOverlay.classList.remove('hidden');
+
+            copyBtn.textContent = '📋 复制图片';
+            copyBtn.disabled = false;
+            downloadBtn.disabled = false;
+
+            const handleDownload = () => {
+                const link = document.createElement('a');
+                link.download = `smash-or-pass-result-${Date.now()}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            };
+
+            const handleCopy = () => {
+                canvas.toBlob(blob => {
+                    if (navigator.clipboard && navigator.clipboard.write) {
+                        const item = new ClipboardItem({ 'image/png': blob });
+                        navigator.clipboard.write([item]).then(() => {
+                            copyBtn.textContent = '✓ 已复制!';
+                            copyBtn.disabled = true;
+                        }).catch(err => {
+                            console.error('无法复制图片: ', err);
+                            alert('复制失败，您的浏览器可能不支持此操作。');
+                        });
+                    } else {
+                        alert('您的浏览器不支持剪贴板API，无法复制图片。');
+                    }
+                }, 'image/png');
+            };
+
+            copyBtn.onclick = handleCopy;
+            downloadBtn.onclick = handleDownload;
+
+        }).catch(err => {
+            // Ensure buttons are visible even if html2canvas fails
+            if (actions) actions.style.visibility = 'visible';
+            console.error("Error generating share image:", err);
+            alert("生成分享图失败。");
+        });
+    }
+
     function init() {
         initializeTheme();
         loadSavedResults();

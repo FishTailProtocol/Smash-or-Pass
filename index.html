@@ -140,8 +140,8 @@
                 </div>
                 <p id="explanation"></p>
                 <div class="result-actions">
-                    <button id="try-again-btn" class="btn btn-secondary">🔄 再试一次</button>
-                </div>
+                   <button id="try-again-btn" class="btn btn-secondary">🔄 再试一次</button>
+               </div>
             </article>
         </section>
         
@@ -165,11 +165,14 @@
     </div>
 
     <div id="popup-overlay" class="hidden" role="dialog" aria-modal="true" aria-labelledby="popup-verdict">
-        <div class="popup-card">
+        <div class="popup-card" id="popup-card-content">
             <button class="close-popup close-btn" aria-label="关闭弹窗">×</button>
             <img id="popup-img" src="" alt="预览图片">
             <h3 id="popup-verdict"></h3>
             <p id="popup-explanation"></p>
+            <div class="popup-actions">
+                <button id="share-from-popup-btn" class="btn">🖼️ 生成分享图</button>
+            </div>
         </div>
     </div>
 
@@ -204,6 +207,19 @@
         </div>
     </div>
     
+    <div id="share-overlay" class="hidden" role="dialog" aria-modal="true" aria-labelledby="share-title">
+        <div class="share-panel">
+            <button id="close-share-btn" class="close-btn" aria-label="关闭分享视图">×</button>
+            <h2 id="share-title">分享我的战绩</h2>
+            <div id="share-image-container"></div>
+            <div class="share-actions">
+                <button id="copy-share-btn" class="btn">📋 复制图片</button>
+                <button id="download-share-btn" class="btn btn-secondary">📥 下载图片</button>
+            </div>
+        </div>
+    </div>
+    
     <script type="module" src="/src/main.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </body>
 </html>
