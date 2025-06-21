@@ -1360,6 +1360,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     
+        // --- Fix for scrollable text in popup ---
+        const explanationInClone = contentToRender.querySelector('#popup-explanation');
+        if (explanationInClone) {
+            explanationInClone.style.maxHeight = 'none';
+            explanationInClone.style.overflowY = 'visible';
+        }
+    
         const sourceStyle = window.getComputedStyle(sourceElement);
         let sourceBgColor = sourceStyle.backgroundColor;
         if (sourceBgColor === 'rgba(0, 0, 0, 0)') sourceBgColor = '#ffffff';
