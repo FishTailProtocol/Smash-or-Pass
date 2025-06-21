@@ -1375,9 +1375,11 @@ document.addEventListener('DOMContentLoaded', () => {
         // --- Fix for scrollable text in popup ---
         const explanationInClone = contentToRender.querySelector('#popup-explanation');
         if (explanationInClone) {
+            // --- Final, Robust Fix for Full Text Capture ---
+            // Set the element's height to its full scrollable height.
+            explanationInClone.style.height = `${explanationInClone.scrollHeight}px`;
             explanationInClone.style.maxHeight = 'none';
             explanationInClone.style.overflowY = 'visible';
-            explanationInClone.style.paddingBottom = '20px'; // Add padding to ensure last line is rendered
         }
     
         const sourceStyle = window.getComputedStyle(sourceElement);
