@@ -474,6 +474,7 @@ document.addEventListener('DOMContentLoaded', () => {
         showView('result'); // Ensure the result container is visible
         hideLoading();
         elements.result.classList.remove('hidden');
+        elements.resultImageThumbnail.src = originalDataUrl; // Show the image even on error
         elements.verdict.textContent = '出错了!';
         elements.verdictIcon.textContent = '😱';
         elements.explanation.textContent = errorMessage;
@@ -564,6 +565,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
+        saveApiSettings(); // Save settings just before analysis
         const provider = elements.apiProviderSelect.value;
         const settings = allApiSettings[provider] || {};
         
