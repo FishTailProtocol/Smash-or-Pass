@@ -471,6 +471,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function displayError(errorMessage) {
+        showView('result'); // Ensure the result container is visible
         hideLoading();
         elements.result.classList.remove('hidden');
         elements.verdict.textContent = '出错了!';
