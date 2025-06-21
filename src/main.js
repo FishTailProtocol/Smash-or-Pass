@@ -335,6 +335,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const elements = {
         body: document.body,
         themeSwitcher: document.querySelector('.theme-switcher'),
+        themeToggleBtn: document.getElementById('theme-toggle-btn'),
+        themeOptions: document.querySelector('.theme-options'),
         uploadArea: document.getElementById('upload-area'),
         fileInput: document.getElementById('file-input'),
         previewContainer: document.getElementById('preview-container'),
@@ -1120,9 +1122,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Event Listeners ---
     function setupEventListeners() {
-        elements.themeSwitcher.addEventListener('click', (e) => {
+        elements.themeToggleBtn.addEventListener('click', () => {
+            const isExpanded = elements.themeOptions.classList.toggle('expanded');
+            elements.themeToggleBtn.setAttribute('aria-expanded', isExpanded);
+        });
+
+        elements.themeOptions.addEventListener('click', (e) => {
             if (e.target.classList.contains('theme-btn')) {
                 setTheme(e.target.dataset.theme);
+                // Optional: close menu on selection
+                if (window.innerWidth <= 768) {
+                    elements.themeOptions.classList.remove('expanded');
+                    elements.themeToggleBtn.setAttribute('aria-expanded', 'false');
+                }
             }
         });
 
