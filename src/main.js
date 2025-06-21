@@ -350,6 +350,7 @@ document.addEventListener('DOMContentLoaded', () => {
         verdict: document.getElementById('verdict'),
         verdictIcon: document.getElementById('verdict-icon'),
         explanation: document.getElementById('explanation'),
+        resultSeal: document.getElementById('result-seal'),
         resultActions: document.querySelector('.result-actions'),
         tryAgainBtn: document.getElementById('try-again-btn'),
         disclaimer: document.getElementById('disclaimer'),
@@ -400,6 +401,8 @@ document.addEventListener('DOMContentLoaded', () => {
         copyShareBtn: document.getElementById('copy-share-btn'),
         downloadShareBtn: document.getElementById('download-share-btn'),
         shareImageContainer: document.getElementById('share-image-container'),
+        // Settings Elements
+        sealEnabledCheckbox: document.getElementById('seal-enabled-checkbox'),
     };
 
     // --- State Management ---
@@ -413,6 +416,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentPromptSet = '原版';
     let editingPromptName = null;
     let lastUsedModel = '';
+    let isSealEnabled = true;
 
     // Helper function to extract verdict terms from a prompt
     function getVerdictTerms(promptSet, aiType, prompts) {
@@ -460,6 +464,8 @@ document.addEventListener('DOMContentLoaded', () => {
             currentFile = null;
             originalDataUrl = null;
             processedDataUrl = null;
+            elements.resultSeal.classList.add('hidden'); // Hide seal on reset
+            elements.popupCardContent.querySelector('.seal-container').classList.add('hidden');
         } else if (viewName === 'preview') {
             elements.previewContainer.classList.remove('hidden');
         } else if (viewName === 'result') {
@@ -524,6 +530,14 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.verdictIcon.textContent = isPositive ? '🥵' : '🥶';
         elements.explanation.textContent = reasoningText;
         elements.result.className = `result ${isPositive ? 'smash' : 'pass'}`; // Use generic classes for styling
+
+        // Update and show the seal
+        if (isSealEnabled) {
+            elements.resultSeal.innerHTML = `<span class="seal-text">AI审定</span><span class="seal-model">${lastUsedModel}</span>`;
+            elements.resultSeal.classList.remove('hidden');
+        } else {
+            elements.resultSeal.classList.add('hidden');
+        }
 
         // Clear old buttons and add new ones
         elements.resultActions.innerHTML = '';
@@ -864,9 +878,18 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.popupVerdict.textContent = `${getRatingLabel(result.rating)} (${result.rating}/10) ${result.verdict} ${icon}`;
         elements.popupExplanation.textContent = result.explanation;
 
+        // Show seal in popup
+        const popupSeal = elements.popupCardContent.querySelector('.seal-container');
+        if (isSealEnabled) {
+            popupSeal.innerHTML = `<span class="seal-text">AI审定</span><span class="seal-model">${result.modelName || '未知模型'}</span>`;
+            popupSeal.classList.remove('hidden');
+        } else {
+            popupSeal.classList.add('hidden');
+        }
+
         // The share button listener is attached here to capture the correct `result` object
         elements.shareFromPopupBtn.onclick = () => {
-            generateShareImage(elements.popupCardContent, result.image, result.modelName || '未知模型');
+            generateShareImage(elements.popupCardContent, result.image, result.modelName);
         };
 
         elements.popupOverlay.classList.remove('hidden');
@@ -919,6 +942,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const savedSettings = JSON.parse(localStorage.getItem('allApiSettings'));
         if (savedSettings) allApiSettings = savedSettings;
         currentProvider = localStorage.getItem('currentProvider') || 'custom';
+        isSealEnabled = localStorage.getItem('isSealEnabled') === 'false' ? false : true;
+        if (elements.sealEnabledCheckbox) {
+            elements.sealEnabledCheckbox.checked = isSealEnabled;
+        }
         elements.apiProviderSelect.value = currentProvider;
         updateFormUI(currentProvider);
     }
@@ -935,6 +962,10 @@ document.addEventListener('DOMContentLoaded', () => {
         allApiSettings[provider] = currentSettings;
         localStorage.setItem('allApiSettings', JSON.stringify(allApiSettings));
         localStorage.setItem('currentProvider', provider);
+        if (elements.sealEnabledCheckbox) {
+            isSealEnabled = elements.sealEnabledCheckbox.checked;
+            localStorage.setItem('isSealEnabled', isSealEnabled);
+        }
         elements.keyStatus.textContent = '设置已保存！';
         setTimeout(() => {
             elements.keyStatus.textContent = currentSettings.key ? '已加载保存的设置。' : `尚未为 ${provider} 配置 API 密钥。`;
@@ -1139,12 +1170,34 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.resultImageThumbnail.addEventListener('click', () => showView('upload'));
         elements.resultImageThumbnail.style.cursor = 'pointer';
 
+        // Add click listener to the popup image to reload it for analysis
+        elements.popupImg.addEventListener('click', async () => {
+            if (!elements.popupImg.src) return;
+            try {
+                const response = await fetch(elements.popupImg.src);
+                const blob = await response.blob();
+                const file = new File([blob], `saved-image-${Date.now()}.png`, { type: blob.type });
+                
+                handleFileSelect(file);
+                // Close both overlays
+                elements.popupOverlay.classList.add('hidden');
+                elements.savedResultsOverlay.classList.add('hidden');
+            } catch (error) {
+                console.error("Error reloading image from popup:", error);
+                alert("从弹窗加载图片失败。");
+            }
+        });
+
         elements.viewSavedBtn.addEventListener('click', () => {
             renderSavedResults();
             elements.savedResultsOverlay.classList.remove('hidden');
         });
         elements.closeSavedBtn.addEventListener('click', () => elements.savedResultsOverlay.classList.add('hidden'));
-        elements.closePopupBtn.addEventListener('click', () => elements.popupOverlay.classList.add('hidden'));
+        elements.closePopupBtn.addEventListener('click', () => {
+            elements.popupOverlay.classList.add('hidden');
+            const popupSeal = elements.popupCardContent.querySelector('.seal-container');
+            if (popupSeal) popupSeal.classList.add('hidden');
+        });
         elements.closeShareBtn.addEventListener('click', () => elements.shareOverlay.classList.add('hidden'));
 
         elements.searchSavedInput.addEventListener('input', renderSavedResults);
@@ -1292,103 +1345,77 @@ document.addEventListener('DOMContentLoaded', () => {
     function generateShareImage(sourceElement, imageSrc, modelName = '未知模型') {
         const copyBtn = elements.copyShareBtn;
         const downloadBtn = elements.downloadShareBtn;
-
-        // Temporarily hide buttons within the source element for the screenshot
-        const actions = sourceElement.querySelector('.result-actions, .popup-actions');
-        if (actions) actions.style.visibility = 'hidden';
-
-        html2canvas(sourceElement, {
-            backgroundColor: '#FFFFFF', // Force white background
+    
+        const tempContainer = document.createElement('div');
+        const contentToRender = sourceElement.cloneNode(true);
+    
+        const sealInClone = contentToRender.querySelector('.seal-container');
+        if (sealInClone) {
+            if (elements.sealEnabledCheckbox.checked) {
+                sealInClone.classList.remove('hidden');
+                const modelSpan = sealInClone.querySelector('.seal-model');
+                if (modelSpan) modelSpan.textContent = modelName;
+            } else {
+                sealInClone.remove();
+            }
+        }
+    
+        const sourceStyle = window.getComputedStyle(sourceElement);
+        let sourceBgColor = sourceStyle.backgroundColor;
+        if (sourceBgColor === 'rgba(0, 0, 0, 0)') sourceBgColor = '#ffffff';
+    
+        Object.assign(tempContainer.style, {
+            position: 'absolute',
+            left: '-9999px',
+            top: '0px',
+            width: `${sourceElement.offsetWidth}px`,
+            backgroundColor: sourceBgColor,
+            padding: sourceStyle.padding,
+            borderRadius: sourceStyle.borderRadius,
+        });
+    
+        const thumbnail = contentToRender.querySelector('#result-image-thumbnail, #popup-img');
+        if (thumbnail && imageSrc) thumbnail.src = imageSrc;
+    
+        const actions = contentToRender.querySelector('.result-actions, .popup-actions');
+        if (actions) actions.remove();
+    
+        tempContainer.appendChild(contentToRender);
+        document.body.appendChild(tempContainer);
+    
+        // --- Optimization: Hide animated backgrounds before rendering ---
+        const bgShapes = document.querySelector('.background-shapes');
+        const starField = document.querySelector('#star-field');
+        if (bgShapes) bgShapes.style.display = 'none';
+        if (starField) starField.style.display = 'none';
+    
+        html2canvas(tempContainer, {
             useCORS: true,
             allowTaint: true,
-            willReadFrequently: true, // Performance optimization
-            onclone: (doc) => {
-                const clonedElement = doc.getElementById(sourceElement.id);
-                if (!clonedElement) return;
-
-                // Get the original display style and apply it to the clone
-                const originalDisplay = window.getComputedStyle(sourceElement).display;
-                clonedElement.style.display = originalDisplay;
-                clonedElement.style.borderRadius = 'var(--border-radius)';
-
-                // Ensure the correct image is shown in the clone
-                const thumbnail = clonedElement.querySelector('#result-image-thumbnail, #popup-img');
-                if (thumbnail && imageSrc) thumbnail.src = imageSrc;
-                
-                // Hide actions in the clone permanently for the screenshot
-                const clonedActions = clonedElement.querySelector('.result-actions, .popup-actions');
-                if (clonedActions) clonedActions.style.display = 'none';
-            }
+            backgroundColor: sourceBgColor
         }).then(canvas => {
-            // Restore button visibility on the original element
-            if (actions) actions.style.visibility = 'visible';
-
-            // --- Draw the seal ---
-            const ctx = canvas.getContext('2d');
-            const stampRadius = Math.min(canvas.width, canvas.height) * 0.09;
-            const stampX = canvas.width - stampRadius - 25;
-            const stampY = canvas.height - stampRadius - 25;
-            
-            ctx.save(); // Save context state before drawing stamp
-            ctx.translate(stampX, stampY);
-            ctx.rotate(15 * Math.PI / 180); // Rotate the stamp slightly
-
-            // Draw outer circle
-            ctx.strokeStyle = 'rgba(220, 50, 50, 0.85)';
-            ctx.lineWidth = stampRadius * 0.07;
-            ctx.beginPath();
-            ctx.arc(0, 0, stampRadius, 0, Math.PI * 2);
-            ctx.stroke();
-
-            // Prepare text
-            ctx.fillStyle = 'rgba(220, 50, 50, 0.85)';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-
-            // Top text "祝"
-            let topFontSize = stampRadius * 0.4;
-            ctx.font = `bold ${topFontSize}px sans-serif`;
-            ctx.fillText('祝', 0, -stampRadius * 0.5);
-
-            // Bottom text "秋"
-            let bottomFontSize = stampRadius * 0.4;
-            ctx.font = `bold ${bottomFontSize}px sans-serif`;
-            ctx.fillText('秋', 0, stampRadius * 0.5);
-
-            // Middle text (model name)
-            let modelFontSize = stampRadius * 0.18;
-            ctx.font = `bold ${modelFontSize}px sans-serif`;
-            const maxWidth = stampRadius * 2 * 0.75;
-            if (ctx.measureText(modelName).width > maxWidth) {
-                modelFontSize *= maxWidth / ctx.measureText(modelName).width;
-                ctx.font = `bold ${modelFontSize}px 'sans-serif'`;
-            }
-            ctx.fillText(modelName, 0, 0);
-            
-            ctx.restore(); // Restore context state
-
             elements.shareImageContainer.innerHTML = '';
             canvas.style.width = '100%';
             canvas.style.height = 'auto';
             canvas.style.borderRadius = 'var(--border-radius)';
             elements.shareImageContainer.appendChild(canvas);
             elements.shareOverlay.classList.remove('hidden');
-
+    
             copyBtn.textContent = '📋 复制图片';
             copyBtn.disabled = false;
             downloadBtn.disabled = false;
-
+    
             const handleDownload = () => {
                 const link = document.createElement('a');
                 link.download = `smash-or-pass-result-${Date.now()}.jpeg`;
-                link.href = canvas.toDataURL('image/jpeg', 0.95); // Use JPEG format
+                link.href = canvas.toDataURL('image/jpeg', 0.95);
                 link.click();
             };
-
+    
             const handleCopy = () => {
                 canvas.toBlob(blob => {
                     if (navigator.clipboard && navigator.clipboard.write) {
-                        const item = new ClipboardItem({ 'image/jpeg': blob }); // Use JPEG format
+                        const item = new ClipboardItem({ 'image/png': blob });
                         navigator.clipboard.write([item]).then(() => {
                             copyBtn.textContent = '✓ 已复制!';
                             copyBtn.disabled = true;
@@ -1399,17 +1426,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     } else {
                         alert('您的浏览器不支持剪贴板API，无法复制图片。');
                     }
-                }, 'image/jpeg', 0.95); // Use JPEG format
+                }, 'image/png');
             };
-
+    
             copyBtn.onclick = handleCopy;
             downloadBtn.onclick = handleDownload;
-
+    
         }).catch(err => {
-            // Ensure buttons are visible even if html2canvas fails
-            if (actions) actions.style.visibility = 'visible';
             console.error("Error generating share image:", err);
             alert("生成分享图失败。");
+        }).finally(() => {
+            // --- Restore elements ---
+            if (bgShapes) bgShapes.style.display = '';
+            if (starField) starField.style.display = '';
+            document.body.removeChild(tempContainer);
         });
     }
 

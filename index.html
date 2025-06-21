@@ -76,6 +76,14 @@
                     <button id="fetch-models-btn" class="btn btn-secondary">获取模型</button>
                 </div>
 
+                <div class="form-control toggle-switch">
+                    <span>启用AI审定图章</span>
+                    <label class="switch">
+                        <input type="checkbox" id="seal-enabled-checkbox" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
                 <button id="save-key-btn" class="btn">保存设置</button>
                 <p id="key-status" class="key-status"></p>
             </div>
@@ -133,6 +141,7 @@
                 </div>
             </div>
             <article id="result" class="hidden">
+                <div id="result-seal" class="seal-container hidden"></div>
                 <img id="result-image-thumbnail" src="" alt="结果缩略图" class="result-image-thumbnail">
                 <div class="verdict-container">
                     <span id="verdict-icon"></span>
@@ -167,6 +176,7 @@
     <div id="popup-overlay" class="hidden" role="dialog" aria-modal="true" aria-labelledby="popup-verdict">
         <div class="popup-card" id="popup-card-content">
             <button class="close-popup close-btn" aria-label="关闭弹窗">×</button>
+            <div class="seal-container hidden"></div>
             <img id="popup-img" src="" alt="预览图片">
             <h3 id="popup-verdict"></h3>
             <p id="popup-explanation"></p>
