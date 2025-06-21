@@ -403,16 +403,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const settings = allApiSettings[provider] || {};
         const modelName = settings.model || '未知模型';
         
-        const dynamicLoadingMessages = loadingMessages.map(msg => msg.replace('{modelName}', modelName));
+        elements.loadingText.textContent = `正在调用 ${modelName}...`;
 
-        let messageIndex = 0;
-        elements.loadingText.textContent = dynamicLoadingMessages[messageIndex];
-
-        const intervalId = setInterval(() => {
-            messageIndex = (messageIndex + 1) % dynamicLoadingMessages.length;
-            elements.loadingText.textContent = dynamicLoadingMessages[messageIndex];
-        }, 2000);
-        elements.loading.dataset.intervalId = intervalId;
+        // Clear any existing interval to prevent multiple loops
+        if (elements.loading.dataset.intervalId) {
+            clearInterval(elements.loading.dataset.intervalId);
+        }
 
         elements.progressBar.style.width = '0%';
         setTimeout(() => { elements.progressBar.style.width = '30%'; }, 100);
