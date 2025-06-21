@@ -257,6 +257,7 @@ const getRatingLabel = (rating) => {
 };
 
 const loadingMessages = [
+    "正在调用 {modelName}...",
     "AI正在审视每一个像素...",
     "计算可操性指数...",
     "加载骚话语料库...",
@@ -402,10 +403,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const settings = allApiSettings[provider] || {};
         const modelName = settings.model || '未知模型';
         
-        const dynamicLoadingMessages = [
-            `正在调用 ${modelName}...`,
-            ...loadingMessages
-        ];
+        const dynamicLoadingMessages = loadingMessages.map(msg => msg.replace('{modelName}', modelName));
 
         let messageIndex = 0;
         elements.loadingText.textContent = dynamicLoadingMessages[messageIndex];
@@ -476,7 +474,6 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.result.classList.remove('hidden');
         elements.resultImageThumbnail.src = originalDataUrl; // Show the image even on error
         elements.verdict.textContent = '出错了!';
-        elements.resultImageThumbnail.src = originalDataUrl; // Show the image even on error
         elements.verdictIcon.textContent = '😱';
         elements.explanation.textContent = errorMessage;
         elements.result.className = 'result';
@@ -566,7 +563,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
-        saveApiSettings(); // Save settings just before analysis
         saveApiSettings(); // Save settings just before analysis
         const provider = elements.apiProviderSelect.value;
         const settings = allApiSettings[provider] || {};
