@@ -1295,7 +1295,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (actions) actions.style.visibility = 'hidden';
 
         html2canvas(sourceElement, {
-            backgroundColor: null,
+            backgroundColor: '#FFFFFF', // Force white background
             useCORS: true,
             onclone: (doc) => {
                 const clonedElement = doc.getElementById(sourceElement.id);
@@ -1331,15 +1331,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const handleDownload = () => {
                 const link = document.createElement('a');
-                link.download = `smash-or-pass-result-${Date.now()}.png`;
-                link.href = canvas.toDataURL('image/png');
+                link.download = `smash-or-pass-result-${Date.now()}.jpeg`;
+                link.href = canvas.toDataURL('image/jpeg', 0.95); // Use JPEG format
                 link.click();
             };
 
             const handleCopy = () => {
                 canvas.toBlob(blob => {
                     if (navigator.clipboard && navigator.clipboard.write) {
-                        const item = new ClipboardItem({ 'image/png': blob });
+                        const item = new ClipboardItem({ 'image/jpeg': blob }); // Use JPEG format
                         navigator.clipboard.write([item]).then(() => {
                             copyBtn.textContent = '✓ 已复制!';
                             copyBtn.disabled = true;
@@ -1350,7 +1350,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     } else {
                         alert('您的浏览器不支持剪贴板API，无法复制图片。');
                     }
-                }, 'image/png');
+                }, 'image/jpeg', 0.95); // Use JPEG format
             };
 
             copyBtn.onclick = handleCopy;
