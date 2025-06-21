@@ -1300,6 +1300,8 @@ document.addEventListener('DOMContentLoaded', () => {
         html2canvas(sourceElement, {
             backgroundColor: '#FFFFFF', // Force white background
             useCORS: true,
+            allowTaint: true,
+            willReadFrequently: true, // Performance optimization
             onclone: (doc) => {
                 const clonedElement = doc.getElementById(sourceElement.id);
                 if (!clonedElement) return;
@@ -1332,30 +1334,30 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.rotate(15 * Math.PI / 180); // Rotate the stamp slightly
 
             // Draw outer circle
-            ctx.strokeStyle = 'rgba(255, 0, 0, 0.8)';
+            ctx.strokeStyle = 'rgba(220, 50, 50, 0.85)';
             ctx.lineWidth = stampRadius * 0.07;
             ctx.beginPath();
             ctx.arc(0, 0, stampRadius, 0, Math.PI * 2);
             ctx.stroke();
 
             // Prepare text
-            ctx.fillStyle = 'rgba(255, 0, 0, 0.8)';
+            ctx.fillStyle = 'rgba(220, 50, 50, 0.85)';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
 
-            // Top text "AI"
+            // Top text "祝"
             let topFontSize = stampRadius * 0.4;
-            ctx.font = `bold ${topFontSize}px 'KaiTi', 'serif'`;
-            ctx.fillText('AI', 0, -stampRadius * 0.5);
+            ctx.font = `bold ${topFontSize}px sans-serif`;
+            ctx.fillText('祝', 0, -stampRadius * 0.5);
 
-            // Bottom text "审定"
+            // Bottom text "秋"
             let bottomFontSize = stampRadius * 0.4;
-            ctx.font = `bold ${bottomFontSize}px 'KaiTi', 'serif'`;
-            ctx.fillText('审定', 0, stampRadius * 0.5);
+            ctx.font = `bold ${bottomFontSize}px sans-serif`;
+            ctx.fillText('秋', 0, stampRadius * 0.5);
 
             // Middle text (model name)
             let modelFontSize = stampRadius * 0.18;
-            ctx.font = `bold ${modelFontSize}px 'sans-serif'`;
+            ctx.font = `bold ${modelFontSize}px sans-serif`;
             const maxWidth = stampRadius * 2 * 0.75;
             if (ctx.measureText(modelName).width > maxWidth) {
                 modelFontSize *= maxWidth / ctx.measureText(modelName).width;
