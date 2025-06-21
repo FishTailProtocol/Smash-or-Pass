@@ -1399,7 +1399,7 @@ document.addEventListener('DOMContentLoaded', () => {
         html2canvas(tempContainer, {
             useCORS: true,
             allowTaint: true,
-            backgroundColor: sourceBgColor
+            backgroundColor: '#ffffff' // Force white background
         }).then(canvas => {
             elements.shareImageContainer.innerHTML = '';
             canvas.style.width = '100%';
@@ -1422,7 +1422,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const handleCopy = () => {
                 canvas.toBlob(blob => {
                     if (navigator.clipboard && navigator.clipboard.write) {
-                        const item = new ClipboardItem({ 'image/png': blob });
+                        const item = new ClipboardItem({ 'image/jpeg': blob });
                         navigator.clipboard.write([item]).then(() => {
                             copyBtn.textContent = '✓ 已复制!';
                             copyBtn.disabled = true;
@@ -1433,7 +1433,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     } else {
                         alert('您的浏览器不支持剪贴板API，无法复制图片。');
                     }
-                }, 'image/png');
+                }, 'image/jpeg', 0.95);
             };
     
             copyBtn.onclick = handleCopy;
