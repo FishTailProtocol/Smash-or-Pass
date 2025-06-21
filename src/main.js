@@ -1377,6 +1377,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (explanationInClone) {
             explanationInClone.style.maxHeight = 'none';
             explanationInClone.style.overflowY = 'visible';
+            explanationInClone.style.paddingBottom = '20px'; // Add padding to ensure last line is rendered
         }
     
         const sourceStyle = window.getComputedStyle(sourceElement);
