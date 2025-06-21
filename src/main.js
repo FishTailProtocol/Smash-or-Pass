@@ -402,13 +402,26 @@ document.addEventListener('DOMContentLoaded', () => {
         const provider = elements.apiProviderSelect.value;
         const settings = allApiSettings[provider] || {};
         const modelName = settings.model || '未知模型';
-        
-        elements.loadingText.textContent = `正在调用 ${modelName}...`;
 
+        const dynamicLoadingMessages = loadingMessages.map(msg => msg.replace('{modelName}', modelName));
+        
         // Clear any existing interval to prevent multiple loops
         if (elements.loading.dataset.intervalId) {
             clearInterval(elements.loading.dataset.intervalId);
         }
+
+        let messageIndex = 0;
+        elements.loadingText.textContent = dynamicLoadingMessages[messageIndex];
+
+        const intervalId = setInterval(() => {
+            messageIndex++;
+            if (messageIndex < dynamicLoadingMessages.length) {
+                elements.loadingText.textContent = dynamicLoadingMessages[messageIndex];
+            } else {
+                clearInterval(intervalId);
+            }
+        }, 1500); // Change message every 1.5 seconds
+        elements.loading.dataset.intervalId = intervalId;
 
         elements.progressBar.style.width = '0%';
         setTimeout(() => { elements.progressBar.style.width = '30%'; }, 100);
