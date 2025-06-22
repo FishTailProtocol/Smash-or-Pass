@@ -405,6 +405,8 @@ document.addEventListener('DOMContentLoaded', () => {
         shareImageContainer: document.getElementById('share-image-container'),
         // Settings Elements
         sealEnabledCheckbox: document.getElementById('seal-enabled-checkbox'),
+       // Pagination
+       paginationControls: document.getElementById('pagination-controls'),
     };
 
     // --- State Management ---
@@ -412,6 +414,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let originalDataUrl = null;
     let processedDataUrl = null;
     let savedResults = [];
+   let currentPage = 1;
     let allApiSettings = {};
     let currentProvider = 'custom';
     let allPrompts = {};
@@ -809,64 +812,111 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderSavedResults() {
-        const searchTerm = elements.searchSavedInput.value.toLowerCase();
-        const filterValue = elements.filterSavedSelect.value;
+       const searchTerm = elements.searchSavedInput.value.toLowerCase();
+       const filterValue = elements.filterSavedSelect.value;
 
-        const filteredResults = savedResults.filter(res => {
-            // Defensive check for missing explanation to prevent crashes on old data
-            const matchesSearch = (res.explanation || '').toLowerCase().includes(searchTerm);
+       const filteredResults = savedResults.filter(res => {
+           const matchesSearch = (res.explanation || '').toLowerCase().includes(searchTerm);
+           const terms = getVerdictTerms(res.promptSet || '原版', res.aiType || 'brief', allPrompts);
+           const isPositive = res.verdict === terms.positive;
+           const isNegative = res.verdict === terms.negative;
+           const matchesFilter = filterValue === 'all' || (filterValue === 'SMASH' && isPositive) || (filterValue === 'PASS' && isNegative);
+           return matchesSearch && matchesFilter;
+       });
 
-            // Robust filter logic that works across different prompt sets
-            const terms = getVerdictTerms(res.promptSet || '原版', res.aiType || 'brief', allPrompts);
-            const isPositive = res.verdict === terms.positive;
-            const isNegative = res.verdict === terms.negative;
+       const itemsPerPage = window.innerWidth <= 768 ? 1 : 6;
+       const totalPages = Math.ceil(filteredResults.length / itemsPerPage);
+       
+       // Ensure currentPage is valid
+       if (currentPage > totalPages) {
+           currentPage = totalPages;
+       }
+       if (currentPage < 1) {
+           currentPage = 1;
+       }
 
-            const matchesFilter = filterValue === 'all' ||
-                                  (filterValue === 'SMASH' && isPositive) ||
-                                  (filterValue === 'PASS' && isNegative);
-                                  
-            return matchesSearch && matchesFilter;
-        });
+       const startIndex = (currentPage - 1) * itemsPerPage;
+       const endIndex = startIndex + itemsPerPage;
+       const paginatedItems = filteredResults.slice(startIndex, endIndex);
 
-        elements.savedResultsGrid.innerHTML = '';
-        if (filteredResults.length === 0) {
-            elements.savedResultsGrid.innerHTML = '<p style="grid-column: 1 / -1; text-align: center;">没有找到匹配的战绩。</p>';
-            return;
-        }
+       elements.savedResultsGrid.innerHTML = '';
+       if (paginatedItems.length === 0) {
+           elements.savedResultsGrid.innerHTML = '<p style="grid-column: 1 / -1; text-align: center;">没有找到匹配的战绩。</p>';
+           renderPagination(0, 0, 0); // Clear pagination
+           return;
+       }
 
-        filteredResults.forEach(res => {
-            const card = document.createElement('div');
-            card.className = 'saved-result-card';
+       paginatedItems.forEach(res => {
+           const card = document.createElement('div');
+           card.className = 'saved-result-card';
 
-            const terms = getVerdictTerms(res.promptSet || '原版', res.aiType || 'brief', allPrompts);
-            let icon = '🤔'; // Default/moderate icon
-            if (res.verdict === terms.positive) {
-                icon = '🥵';
-            } else if (res.verdict === terms.negative) {
-                icon = '🥶';
-            }
+           const terms = getVerdictTerms(res.promptSet || '原版', res.aiType || 'brief', allPrompts);
+           let icon = '🤔';
+           if (res.verdict === terms.positive) icon = '🥵';
+           else if (res.verdict === terms.negative) icon = '🥶';
 
-            card.innerHTML = `
-                <img src="${res.image}" alt="Saved result" loading="lazy">
-                <div class="saved-result-info">
-                    <p class="verdict">${getRatingLabel(res.rating)} (${res.rating}/10) ${res.verdict} ${icon}</p>
-                    <p class="date">${new Date(res.timestamp).toLocaleString()}</p>
-                    <button class="delete-btn">🗑️ 删除</button>
-                </div>
-            `;
-            card.addEventListener('click', (e) => {
-                if (e.target.classList.contains('delete-btn')) {
-                    e.stopPropagation();
-                    savedResults = savedResults.filter(item => item.timestamp !== res.timestamp);
-                    localStorage.setItem('smashOrPassResults', JSON.stringify(savedResults));
-                    renderSavedResults();
-                } else {
-                    showPopup(res);
-                }
-            });
-            elements.savedResultsGrid.appendChild(card);
-        });
-    }
+           card.innerHTML = `
+               <img src="${res.image}" alt="Saved result" loading="lazy">
+               <div class="saved-result-info">
+                   <p class="verdict">${getRatingLabel(res.rating)} (${res.rating}/10) ${res.verdict} ${icon}</p>
+                   <p class="date">${new Date(res.timestamp).toLocaleString()}</p>
+                   <button class="delete-btn">🗑️ 删除</button>
+               </div>
+           `;
+           card.addEventListener('click', (e) => {
+               if (e.target.classList.contains('delete-btn')) {
+                   e.stopPropagation();
+                   // Find the index in the original array to correctly delete
+                   const originalIndex = savedResults.findIndex(item => item.timestamp === res.timestamp);
+                   if (originalIndex > -1) {
+                       savedResults.splice(originalIndex, 1);
+                       localStorage.setItem('smashOrPassResults', JSON.stringify(savedResults));
+                       renderSavedResults(); // Re-render the current page
+                   }
+               } else {
+                   showPopup(res);
+               }
+           });
+           elements.savedResultsGrid.appendChild(card);
+       });
+
+       renderPagination(totalPages, filteredResults.length, itemsPerPage);
+   }
+
+   function renderPagination(totalPages, totalItems, itemsPerPage) {
+       elements.paginationControls.innerHTML = '';
+       if (totalPages <= 1) return;
+
+       const prevBtn = document.createElement('button');
+       prevBtn.innerHTML = '上一页';
+       prevBtn.className = 'btn btn-secondary';
+       prevBtn.disabled = currentPage === 1;
+       prevBtn.addEventListener('click', () => {
+           if (currentPage > 1) {
+               currentPage--;
+               renderSavedResults();
+           }
+       });
+
+       const pageInfo = document.createElement('span');
+       pageInfo.className = 'page-info';
+       pageInfo.textContent = `第 ${currentPage} / ${totalPages} 页`;
+
+       const nextBtn = document.createElement('button');
+       nextBtn.innerHTML = '下一页';
+       nextBtn.className = 'btn btn-secondary';
+       nextBtn.disabled = currentPage === totalPages;
+       nextBtn.addEventListener('click', () => {
+           if (currentPage < totalPages) {
+               currentPage++;
+               renderSavedResults();
+           }
+       });
+
+       elements.paginationControls.appendChild(prevBtn);
+       elements.paginationControls.appendChild(pageInfo);
+       elements.paginationControls.appendChild(nextBtn);
+   }
 
     function showPopup(result) {
         elements.popupImg.src = result.image;
@@ -1201,6 +1251,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         elements.viewSavedBtn.addEventListener('click', () => {
+           currentPage = 1; // Reset to first page
             renderSavedResults();
             elements.savedResultsOverlay.classList.remove('hidden');
         });
@@ -1212,8 +1263,14 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         elements.closeShareBtn.addEventListener('click', () => elements.shareOverlay.classList.add('hidden'));
 
-        elements.searchSavedInput.addEventListener('input', renderSavedResults);
-        elements.filterSavedSelect.addEventListener('change', renderSavedResults);
+        elements.searchSavedInput.addEventListener('input', () => {
+           currentPage = 1; // Reset to first page on search
+           renderSavedResults();
+        });
+        elements.filterSavedSelect.addEventListener('change', () => {
+           currentPage = 1; // Reset to first page on filter change
+           renderSavedResults();
+        });
 
         // API Settings Listeners
         elements.saveKeyBtn.addEventListener('click', saveApiSettings);
@@ -1435,20 +1492,29 @@ document.addEventListener('DOMContentLoaded', () => {
             };
     
             const handleCopy = () => {
+                // 重新聚焦按钮以帮助解决 "Document is not focused" 的问题
+                copyBtn.focus();
+
                 canvas.toBlob(blob => {
+                    if (!blob) {
+                        alert('无法生成图片 Blob，复制失败。');
+                        return;
+                    }
                     if (navigator.clipboard && navigator.clipboard.write) {
-                        const item = new ClipboardItem({ 'image/jpeg': blob });
+                        // 使用 image/png 以获得更好的兼容性
+                        const item = new ClipboardItem({ 'image/png': blob });
                         navigator.clipboard.write([item]).then(() => {
                             copyBtn.textContent = '✓ 已复制!';
                             copyBtn.disabled = true;
                         }).catch(err => {
                             console.error('无法复制图片: ', err);
-                            alert('复制失败，您的浏览器可能不支持此操作。');
+                            // 提供更具体的错误提示
+                            alert(`复制失败: ${err.name} - ${err.message}\n您的浏览器可能不支持此操作或页面未激活。`);
                         });
                     } else {
                         alert('您的浏览器不支持剪贴板API，无法复制图片。');
                     }
-                }, 'image/jpeg', 0.95);
+                }, 'image/png', 0.95); // 改为 PNG 格式
             };
     
             copyBtn.onclick = handleCopy;
